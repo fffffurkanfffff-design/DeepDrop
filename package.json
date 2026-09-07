@@ -1,0 +1,20 @@
+{
+  "name": "deep-drop-site",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Deep Drop - arcade fishing game with a shared leaderboard",
+  "dependencies": {
+    "@netlify/blobs": "^11.0.3"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "npm run build && npx netlify dev",
+    "deploy": "npm run build && npx netlify deploy --build --prod"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true,
+    "netlify-cli@27.5.0": true,
+    "sharp@0.34.5": true
+  }
+}

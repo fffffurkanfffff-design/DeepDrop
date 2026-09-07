@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Deep Drop - species sheet</title>
+<style>
+  body{margin:0;background:#0A1A22;color:#E6EDE9;
+       font:14px "Barlow",Arial,sans-serif}
+  h1{font:800 22px "Saira Condensed",Arial,sans-serif;letter-spacing:.1em;
+     text-transform:uppercase;padding:14px 16px 0;margin:0}
+  p{margin:4px 16px 12px;color:#8298A4;font-size:13px}
+  canvas{display:block;margin:0 auto 20px;width:100%;height:auto}
+</style>
+</head>
+<body>
+<h1>Species sheet</h1>
+<p>Every species drawn at its maximum weight. Dev tool - not part of the game.</p>
+<canvas id="sheet"></canvas>
+
+<script src="10-data.js"></script>
+<script src="40-render.js"></script>
+<script>
+/* 40-render.js draws through a global `ctx`; give it one and a clock. */
+var COLS = 3, CW = 330, CH = 200;
+var only = new URLSearchParams(location.search).get("shape");
+var LIST = only ? FISH.filter(function(f){ return only.split(",").indexOf(f.shape) >= 0; }) : FISH;
+var rows = Math.ceil(LIST.length / COLS);
+var cv = document.getElementById("sheet");
+cv.width = COLS * CW;
+cv.height = rows * CH;
+var ctx = cv.getContext("2d");
+var t = 0;
+
+ctx.fillStyle = "#0A1A22";
+ctx.fillRect(0, 0, cv.width, cv.height);
+
+LIST.forEach(function(f, i){
+  var cx = (i % COLS) * CW + CW/2;
+  var cy = Math.floor(i / COLS) * CH + CH/2;
+
+  ctx.save();
+  ctx.strokeStyle = "rgba(29,58,71,.8)";
+  ctx.strokeRect((i % COLS)*CW + 0.5, Math.floor(i/COLS)*CH + 0.5, CW-1, CH-1);
+  ctx.restore();
+
+  /* draw at max weight so the biggest form is visible */
+  var kg = f.kg[1];
+  var e = {def:f, len:f.len[1], kg:kg, ph:0.6, face:1, dir:1, boost:1, oy:0};
+  /* scale very long fish down so they fit the cell */
+  var scale = Math.min(1, (CW - 40) / (f.len[1] * 1.5));
+  ctx.save();
+  ctx.translate(cx, cy - 8);
+  ctx.scale(scale, scale);
+  ctx.translate(-cx, -(cy - 8));
+  drawFish(cx, cy - 8, e);
+  ctx.restore();
+
+  ctx.fillStyle = "#E6EDE9";
+  ctx.font = "600 14px Barlow, Arial, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(f.n, cx, cy + CH/2 - 34);
+
+  ctx.fillStyle = RARITY[f.rar].c;
+  ctx.font = "500 10px 'IBM Plex Mono', monospace";
+  ctx.fillText(RARITY[f.rar].n.toUpperCase() + "  ·  " + f.shape + "/" + f.tail + "/" + f.dorsal,
+               cx, cy + CH/2 - 18);
+
+  ctx.fillStyle = "#8298A4";
+  ctx.fillText(f.kg[0] + "-" + f.kg[1] + " kg   " + f.dep[0] + "-" + f.dep[1] + " m   " +
+               f.areas.join("/"), cx, cy + CH/2 - 5);
+});
+</script>
+</body>
+</html>
