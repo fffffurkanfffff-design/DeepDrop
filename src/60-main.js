@@ -24,6 +24,7 @@ document.addEventListener("keydown", function(e){
   if(e.key === "2") setView("shop");
   if(e.key === "3") setView("skills");
   if(e.key === "4") setView("map");
+  if(e.key === "5") setView("crew");
 });
 document.addEventListener("keyup", function(e){
   if(e.key === "ArrowLeft" || e.key === "a" || e.key === "A") keyL = false;
@@ -73,6 +74,9 @@ function frame(now){
     step(dt);
     draw();
     if(mode === "down" || mode === "up") syncGauges();
+  } else if(view === "crew"){
+    t += dt;                       /* keeps the preview boat bobbing */
+    renderCrewPreview();
   }
   requestAnimationFrame(frame);
 }

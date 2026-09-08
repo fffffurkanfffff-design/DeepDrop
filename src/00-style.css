@@ -248,6 +248,7 @@ input[type=text]::placeholder{color:var(--dim);opacity:.7}
 .tier{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;
   padding:2px 7px;border:1px solid currentColor;border-radius:2px;align-self:flex-start}
 .tier.b{color:var(--foam)} .tier.i{color:var(--sodium)} .tier.e{color:var(--rust)}
+.tier.l{color:#B77BE8}
 
 /* species table on the map page */
 .specwrap{border-top:1px solid var(--chart);max-height:340px;overflow-y:auto;scrollbar-width:thin}
@@ -267,3 +268,20 @@ input[type=text]::placeholder{color:var(--dim);opacity:.7}
 .foot kbd{font-family:var(--mono);font-size:11px;background:var(--hull-2);border:1px solid var(--chart);
   padding:1px 5px;border-radius:2px;color:var(--bone)}
 @media (prefers-reduced-motion:reduce){*{transition-duration:.01ms !important}}
+
+/* ---- skill dial (a maxed skill becomes adjustable) ---- */
+.dial{display:flex;align-items:center;gap:9px;padding-top:2px}
+.dial input[type=range]{flex:1;min-width:0;accent-color:var(--sodium);height:18px;margin:0}
+.dial .pct{font-family:var(--mono);font-size:11.5px;color:var(--sodium);
+  font-variant-numeric:tabular-nums;min-width:38px;text-align:right}
+.dial .lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--dim);white-space:nowrap}
+.card.maxed{box-shadow:inset 3px 0 0 var(--sodium)}
+
+/* ---- crew ---- */
+.crewpreview{padding:16px;border-bottom:1px solid var(--chart-soft);text-align:center;
+  background:linear-gradient(180deg,#0A141D 0%,#0E2A36 62%,#0B2029 100%)}
+.crewpreview canvas{max-width:100%;height:auto;display:block;margin:0 auto}
+.crewpreview .hint{margin-top:8px}
+.skincard-sw{display:flex;gap:5px;align-items:center}
+.sw{width:15px;height:15px;border-radius:2px;border:1px solid rgba(255,255,255,.18)}

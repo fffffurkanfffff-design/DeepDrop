@@ -10,12 +10,12 @@
    xp     : xp multiplier
    ------------------------------------------------------------------------ */
 var RARITY = {
-  common:    {n:"Common",    spawn:1000, val:1.00, xp:4,   c:"#8FA6B2"},
-  uncommon:  {n:"Uncommon",  spawn:400,  val:1.15, xp:9,   c:"#5FDCC0"},
-  rare:      {n:"Rare",      spawn:140,  val:1.35, xp:20,  c:"#57A6F0"},
-  epic:      {n:"Epic",      spawn:42,   val:1.65, xp:50,  c:"#B77BE8"},
-  legendary: {n:"Legendary", spawn:9,    val:2.10, xp:130, c:"#FFA23A"},
-  mythic:    {n:"Mythic",    spawn:1.6,  val:3.20, xp:420, c:"#FF5E7A"}
+  common:    {n:"Common",    spawn:1000, val:1.00, xp:10,   c:"#8FA6B2"},
+  uncommon:  {n:"Uncommon",  spawn:400,  val:1.15, xp:20,   c:"#5FDCC0"},
+  rare:      {n:"Rare",      spawn:140,  val:1.35, xp:38,  c:"#57A6F0"},
+  epic:      {n:"Epic",      spawn:42,   val:1.65, xp:85,  c:"#B77BE8"},
+  legendary: {n:"Legendary", spawn:9,    val:2.10, xp:195, c:"#FFA23A"},
+  mythic:    {n:"Mythic",    spawn:1.6,  val:3.20, xp:590, c:"#FF5E7A"}
 };
 var RARITY_ORDER = ["common","uncommon","rare","epic","legendary","mythic"];
 
@@ -32,7 +32,11 @@ var AREAS = [
   {id:"sl", n:"St Lucia",     sub:"KwaZulu-Natal", tier:"Expert",
    lvl:20, maxDepth:460, bombFrom:120, bombDen:0.020,
    blurb:"The subtropical drop-off. Billfish, sharks and the deep canyon.",
-   sky:"#0B1622", tint:[16,72,80]}
+   sky:"#0B1622", tint:[16,72,80]},
+  {id:"sod", n:"Sodwana Bay", sub:"iSimangaliso, KZN", tier:"Legendary",
+   lvl:35, maxDepth:620, bombFrom:140, bombDen:0.026,
+   blurb:"The edge of the continental shelf. Nothing small lives out here.",
+   sky:"#0C1A26", tint:[18,80,86]}
 ];
 
 /* ---- species ------------------------------------------------------------
@@ -189,7 +193,7 @@ var FISH = [
    dep:[25,130], len:[38,62], sp:1.55, shape:"deep", tail:"lunate", dorsal:"twin", head:"blunt",
    back:"#2A4E7E", mid:"#7EA2C8", belly:"#D2E2EE", mark:"yellowfin", markCol:"#3E76B4"},
 
-  {id:"gtrevally", n:"Giant trevally", areas:["sl"], rar:"rare", kg:[10,60], rpk:74,
+  {id:"gtrevally", n:"Trevally", areas:["sl"], rar:"rare", kg:[10,60], rpk:74,
    dep:[40,200], len:[58,110], sp:1.6, shape:"deep", tail:"lunate", dorsal:"twin", head:"blunt",
    back:"#4A5560", mid:"#A6B2BC", belly:"#DDE4E9", mark:"none", markCol:"#333C44"},
 
@@ -209,37 +213,58 @@ var FISH = [
    dep:[70,300], len:[64,124], sp:1.8, shape:"torpedo", tail:"lunate", dorsal:"twin", head:"point",
    back:"#1E4468", mid:"#7EA6C4", belly:"#D6E6F0", mark:"yellowfin", markCol:"#E8C43C"},
 
-  {id:"wahoo", n:"Wahoo", areas:["sl"], rar:"epic", kg:[10,60], rpk:104,
+  {id:"wahoo", n:"Wahoo", areas:["sl","sod"], rar:"epic", kg:[10,60], rpk:104,
    dep:[80,300], len:[74,132], sp:1.95, shape:"slim", tail:"lunate", dorsal:"long", head:"point",
    back:"#26405C", mid:"#8098B4", belly:"#D2DEEA", mark:"bars", markCol:"#44648C"},
 
-  {id:"sailfish", n:"Sailfish", areas:["sl"], rar:"epic", kg:[20,70], rpk:112,
+  {id:"sailfish", n:"Sailfish", areas:["sl","sod"], rar:"epic", kg:[20,70], rpk:112,
    dep:[90,320], len:[92,146], sp:1.85, shape:"bill", tail:"lunate", dorsal:"sail", head:"bill",
    back:"#1E3E6E", mid:"#4E86C0", belly:"#CADCEE", mark:"stripe", markCol:"#7FB0DC"},
 
-  {id:"zambezi", n:"Zambezi shark", areas:["sl"], rar:"epic", kg:[80,300], rpk:32,
+  {id:"zambezi", n:"Zambezi shark", areas:["sl","sod"], rar:"epic", kg:[80,300], rpk:32,
    dep:[110,360], len:[110,172], sp:0.9, shape:"shark", tail:"shark", dorsal:"shark", head:"blunt",
    back:"#6E7468", mid:"#A2A898", belly:"#D6DACA", mark:"none", markCol:"#4E5448"},
 
-  {id:"blackmarlin", n:"Black marlin", areas:["sl"], rar:"legendary", kg:[100,600], rpk:64,
+  {id:"blackmarlin", n:"Black marlin", areas:["sl","sod"], rar:"legendary", kg:[100,600], rpk:64,
    dep:[180,440], len:[130,215], sp:1.6, shape:"bill", tail:"lunate", dorsal:"long", head:"bill",
    back:"#16324E", mid:"#3E76A8", belly:"#C4D8E8", mark:"none", markCol:"#4E8CC0"},
 
-  {id:"bluemarlin", n:"Blue marlin", areas:["sl"], rar:"legendary", kg:[80,450], rpk:68,
+  {id:"bluemarlin", n:"Blue marlin", areas:["sl","sod"], rar:"legendary", kg:[80,450], rpk:68,
    dep:[170,430], len:[126,204], sp:1.65, shape:"bill", tail:"lunate", dorsal:"long", head:"bill",
    back:"#1C3A72", mid:"#4A7CC4", belly:"#CCDCEF", mark:"stripe", markCol:"#6E9ED8"},
 
-  {id:"broadbill", n:"Broadbill swordfish", areas:["sl"], rar:"legendary", kg:[50,350], rpk:76,
+  {id:"broadbill", n:"Broadbill swordfish", areas:["sl","sod"], rar:"legendary", kg:[50,350], rpk:76,
    dep:[240,460], len:[120,196], sp:1.35, shape:"bill", tail:"lunate", dorsal:"sail", head:"bill",
    back:"#2E3A4A", mid:"#76879A", belly:"#CDD6DE", mark:"none", markCol:"#4A5666"},
 
-  {id:"tigershark", n:"Tiger shark", areas:["sl"], rar:"legendary", kg:[150,600], rpk:40,
+  {id:"tigershark", n:"Tiger shark", areas:["sl","sod"], rar:"legendary", kg:[150,600], rpk:40,
    dep:[200,450], len:[134,208], sp:0.85, shape:"shark", tail:"shark", dorsal:"shark", head:"blunt",
    back:"#5A6250", mid:"#96A084", belly:"#D2D8C4", mark:"bars", markCol:"#3A4034"},
 
-  {id:"coelacanth", n:"Coelacanth", areas:["sl"], rar:"mythic", kg:[30,90], rpk:0,
-   tag:true, dep:[330,460], len:[86,128], sp:0.32, shape:"deep", tail:"round", dorsal:"twin",
-   head:"blunt", back:"#22406A", mid:"#5F86B4", belly:"#9CBCD8", mark:"spots", markCol:"#DCE8F4"}
+  {id:"coelacanth", n:"Coelacanth", areas:["sl","sod"], rar:"mythic", kg:[30,90], rpk:1900,
+   bounty:true, dep:[330,460], len:[86,128], sp:0.32, shape:"deep", tail:"round", dorsal:"twin",
+   head:"blunt", back:"#22406A", mid:"#5F86B4", belly:"#9CBCD8", mark:"spots", markCol:"#DCE8F4"},
+
+  /* ===== Sodwana Bay - nothing under epic lives out here ===== */
+  {id:"mantaray", n:"Manta ray", areas:["sod"], rar:"epic", kg:[150,900], rpk:0,
+   tag:true, dep:[25,140], len:[120,190], sp:0.55, shape:"flat", tail:"point", dorsal:"low",
+   head:"shovel", back:"#1E2A38", mid:"#4A5C70", belly:"#DDE4EA", mark:"blotch", markCol:"#C6D2DC"},
+
+  {id:"potatobass", n:"Potato bass", areas:["sod"], rar:"epic", kg:[20,110], rpk:900,
+   dep:[40,180], len:[74,132], sp:0.45, shape:"verydeep", tail:"round", dorsal:"spiny",
+   head:"blunt", back:"#4E4A40", mid:"#9A9384", belly:"#CFC9BA", mark:"spots", markCol:"#332F28"},
+
+  {id:"kingfish", n:"Giant kingfish", areas:["sod"], rar:"legendary", kg:[35,85], rpk:1100,
+   dep:[30,160], len:[86,140], sp:1.7, shape:"deep", tail:"lunate", dorsal:"twin",
+   head:"blunt", back:"#3A4652", mid:"#9BA8B4", belly:"#DCE3E9", mark:"none", markCol:"#2A343E"},
+
+  {id:"dogtooth", n:"Dogtooth tuna", areas:["sod"], rar:"mythic", kg:[40,110], rpk:3800,
+   dep:[60,300], len:[96,152], sp:1.9, shape:"torpedo", tail:"lunate", dorsal:"twin",
+   head:"point", back:"#1C3A54", mid:"#6E92AE", belly:"#D2E0EA", mark:"stripe", markCol:"#8FB2C8"},
+
+  {id:"whaleshark", n:"Whale shark", areas:["sod"], rar:"mythic", kg:[900,4000], rpk:0,
+   tag:true, dep:[20,120], len:[170,240], sp:0.35, shape:"shark", tail:"shark", dorsal:"shark",
+   head:"blunt", back:"#2E4256", mid:"#5A7288", belly:"#D6DEE4", mark:"spots", markCol:"#E4ECF2"}
 ];
 
 /* ---- gear ---------------------------------------------------------------
@@ -257,16 +282,20 @@ var GEAR = {
     {id:"r4", n:"Penn Rampage Boat",           spec:"15 kg boat class",     lvl:10, cost:7500,   maxKg:60},
     {id:"r5", n:"Shimano T-Curve Stand-Up",    spec:"24 kg stand-up",       lvl:15, cost:22000,  maxKg:115},
     {id:"r6", n:"Penn International V",        spec:"37 kg game",           lvl:21, cost:60000,  maxKg:230},
-    {id:"r7", n:"Shimano Tiagra Ultra",        spec:"60 kg bluewater",      lvl:27, cost:150000, maxKg:480}
+    {id:"r7", n:"Shimano Tiagra Ultra",        spec:"60 kg bluewater",      lvl:27, cost:150000,  maxKg:480},
+    {id:"r8", n:"Penn International V 130",    spec:"130 lb unlimited",     lvl:30, cost:1000000, maxKg:750},
+    {id:"r9", n:"Shimano Tiagra Ultra 130",    spec:"130 lb tournament",    lvl:40, cost:5000000, maxKg:1500}
   ],
   reel: [
-    {id:"e1", n:"Shimano Sienna 2500",     spec:"4 kg drag, 150 m",     lvl:1,  cost:0,      depth:60,  drag:4,  spd:2.2},
-    {id:"e2", n:"Daiwa BG 4000",           spec:"7 kg drag, 220 m",     lvl:2,  cost:700,    depth:95,  drag:7,  spd:2.5},
-    {id:"e3", n:"Penn Battle III 6000",    spec:"11 kg drag, 300 m",    lvl:5,  cost:2200,   depth:140, drag:11, spd:2.8},
-    {id:"e4", n:"Penn Slammer IV 8500",    spec:"15 kg drag, 350 m",    lvl:8,  cost:6000,   depth:190, drag:15, spd:3.1},
-    {id:"e5", n:"Shimano Stella SW 14000", spec:"25 kg drag, 420 m",    lvl:13, cost:18000,  depth:250, drag:25, spd:3.4},
-    {id:"e6", n:"Penn International VI 30",spec:"36 kg full drag",      lvl:18, cost:45000,  depth:330, drag:36, spd:3.8},
-    {id:"e7", n:"Shimano Tiagra 50W",      spec:"45 kg lever drag",     lvl:24, cost:110000, depth:460, drag:45, spd:4.2}
+    {id:"e1", n:"Shimano Sienna 2500",     spec:"4 kg drag, 150 m",     lvl:1,  cost:0,      depth:60,  drag:4,  spd:2.2, holds:20},
+    {id:"e2", n:"Daiwa BG 4000",           spec:"7 kg drag, 220 m",     lvl:2,  cost:700,    depth:95,  drag:7,  spd:2.5, holds:35},
+    {id:"e3", n:"Penn Battle III 6000",    spec:"11 kg drag, 300 m",    lvl:5,  cost:2200,   depth:140, drag:11, spd:2.8, holds:55},
+    {id:"e4", n:"Penn Slammer IV 8500",    spec:"15 kg drag, 350 m",    lvl:8,  cost:6000,   depth:190, drag:15, spd:3.1, holds:75},
+    {id:"e5", n:"Shimano Stella SW 14000", spec:"25 kg drag, 420 m",    lvl:13, cost:18000,  depth:250, drag:25, spd:3.4, holds:125},
+    {id:"e6", n:"Penn International VI 30",spec:"36 kg full drag",      lvl:18, cost:45000,  depth:330, drag:36, spd:3.8, holds:180},
+    {id:"e7", n:"Shimano Tiagra 50W",      spec:"45 kg lever drag",     lvl:24, cost:110000,  depth:460, drag:45,  spd:4.2, holds:225},
+    {id:"e8", n:"Shimano Tiagra 130A",     spec:"70 kg lever drag",     lvl:30, cost:1000000, depth:560, drag:70,  spd:4.6, holds:750},
+    {id:"e9", n:"Penn International 130VSX", spec:"140 kg two-speed",   lvl:40, cost:5000000, depth:640, drag:140, spd:5.0, holds:1500}
   ],
   line: [
     {id:"l1", n:"Maxima Ultragreen",       spec:"4 kg mono",            lvl:1,  cost:0,     kg:4},
@@ -275,7 +304,9 @@ var GEAR = {
     {id:"l4", n:"Daiwa J-Braid x8",        spec:"24 kg, 0.28 mm",       lvl:9,  cost:5000,  kg:24},
     {id:"l5", n:"Sufix 832",               spec:"37 kg, 0.36 mm",       lvl:14, cost:15000, kg:37},
     {id:"l6", n:"PowerPro Hollow Ace",     spec:"60 kg hollow braid",   lvl:20, cost:42000, kg:60},
-    {id:"l7", n:"Jerry Brown Hollow",      spec:"100 kg hollow braid",  lvl:26, cost:95000, kg:100}
+    {id:"l7", n:"Jerry Brown Hollow",      spec:"100 kg hollow braid",  lvl:26, cost:95000,   kg:100},
+    {id:"l8", n:"Momoi Hi-Catch 400 lb",  spec:"180 kg mono leader",   lvl:30, cost:1000000, kg:188},
+    {id:"l9", n:"Momoi Diamond 800 lb",   spec:"360 kg big-game",      lvl:40, cost:5000000, kg:375}
   ],
   lure: [
     {id:"u1", n:"Mustad baitholder",  spec:"plain hook and bait",   lvl:1,  cost:0,     boost:0.00, val:1.00},
@@ -301,14 +332,16 @@ var SKILLS = {
   hookset:  {n:"Hookset",       blurb:"width of the bite",              unit:"cm",  base:11, step:2.4,  cost:220,  growth:1.80, dec:0, lvl:1},
   thumb:    {n:"Thumb control", blurb:"slows the drop for tight gaps",  unit:"% ",  base:0,  step:10,   cost:260,  growth:1.82, dec:0, lvl:1},
   chum:     {n:"Chumming",      blurb:"thins small fry out of the water", unit:"% ", base:0, step:11,   cost:420,  growth:1.86, dec:0, lvl:3},
+  scavenger:{n:"Scavenger",     blurb:"less debris in the water",        unit:"% ", base:0, step:11,   cost:380,  growth:1.84, dec:0, lvl:4},
   livewell: {n:"Livewell",      blurb:"how high the run bonus climbs",  unit:"x",   base:3,  step:0.45, cost:520,  growth:1.86, dec:1, lvl:6},
   deckhand: {n:"Deckhand",      blurb:"less drag from a heavy haul",    unit:"% ",  base:0,  step:9,    cost:700,  growth:1.85, dec:0, lvl:8},
   sense:    {n:"Fish sense",    blurb:"reads weight and rarity in the water", unit:"m", base:0, step:26, cost:900, growth:1.84, dec:0, lvl:11},
   steady:   {n:"Steady hands",  blurb:"lowers the risk of a break-off", unit:"% ",  base:0,  step:7,    cost:1400, growth:1.88, dec:0, lvl:14},
   monger:   {n:"Fishmonger",    blurb:"what the market pays you",       unit:"% ",  base:0,  step:8,    cost:2000, growth:1.90, dec:0, lvl:17},
-  sapper:   {n:"Sapper",        blurb:"shrug off the first mine each run", unit:"%",base:0,  step:12,   cost:3200, growth:1.92, dec:0, lvl:21}
+  sapper:   {n:"Sapper",        blurb:"shrug off the first mine each run", unit:"%",base:0,  step:12,   cost:3200, growth:1.92, dec:0, lvl:21},
+  sweeper:  {n:"Minesweeper",   blurb:"fewer mines laid in the water",   unit:"% ", base:0, step:11,   cost:2600, growth:1.90, dec:0, lvl:24}
 };
-var SKILL_ORDER = ["hookset","thumb","chum","livewell","deckhand","sense","steady","monger","sapper"];
+var SKILL_ORDER = ["hookset","thumb","chum","scavenger","livewell","deckhand","sense","steady","monger","sapper","sweeper"];
 var MAXLVL = 8;
 
 /* ---- junk and mines ----------------------------------------------------- */
@@ -320,8 +353,13 @@ var JUNK = [
 ];
 
 /* ---- levelling ---------------------------------------------------------- */
-var MAX_PLAYER_LVL = 30;
-function xpForLevel(n){ return Math.round(90 * Math.pow(n, 1.55)); }   /* xp to go from n to n+1 */
+var MAX_PLAYER_LVL = 45;
+/* Sodwana's epic-plus fish pay so much xp that without this the last ten
+   levels would fall in a handful of casts. Levels below 28 are untouched. */
+function xpForLevel(n){
+  var tail = 1 + Math.max(0, n - 28) / 8;
+  return Math.round(65 * Math.pow(n, 1.34) * tail);
+}   /* xp to go from n to n+1 */
 function xpTotalTo(n){
   var t = 0;
   for(var i=1;i<n;i++) t += xpForLevel(i);
@@ -338,5 +376,39 @@ function bodyRatio(f){ return SHAPE_RATIO[f.shape] || 0.32; }
 /* A fish is fought, not winched: line class is well below what a rig lands.
    Real 60 kg line takes a 400 kg marlin, so capacity is the class times this. */
 var LINE_FACTOR = 4;
-/* a reel lands roughly this multiple of its drag rating before it is spooled */
+/* legacy fallback if a reel has no explicit holds figure */
 var SPOOL_FACTOR = 5;
+
+/* ---- crew and boat skins -------------------------------------------------
+   Bought with the same rand the fish earn. Purely cosmetic - nothing here
+   changes how the game plays.
+   ------------------------------------------------------------------------ */
+var CHAR_SKINS = [
+  {id:"c1", n:"Deckhand",          sub:"shorts and a faded tee",   lvl:1,  cost:0,
+   skin:"#C08A5E", shirt:"#B8442F", trouser:"#2E3A44", hat:null,      hatCol:"#1E2A33"},
+  {id:"c2", n:"Ski-boat skipper",  sub:"cap, shades, sunblock",    lvl:5,  cost:15000,
+   skin:"#B87F52", shirt:"#2E6E7E", trouser:"#26313A", hat:"cap",     hatCol:"#14313A"},
+  {id:"c3", n:"Charter captain",   sub:"whites and a peaked cap",  lvl:12, cost:120000,
+   skin:"#C99A6E", shirt:"#E6EDE9", trouser:"#1C2833", hat:"peaked",  hatCol:"#0F1A22"},
+  {id:"c4", n:"Tournament angler", sub:"team shirt, fighting belt",lvl:20, cost:600000,
+   skin:"#A9724A", shirt:"#1E4E86", trouser:"#12202B", hat:"cap",     hatCol:"#123A66"},
+  {id:"c5", n:"Big-game skipper",  sub:"foul-weather gear",        lvl:30, cost:2500000,
+   skin:"#8E5F3C", shirt:"#E8A22E", trouser:"#22303A", hat:"sou",     hatCol:"#D18F22"},
+  {id:"c6", n:"Sodwana legend",    sub:"sun-bleached and salted",  lvl:40, cost:12000000,
+   skin:"#7C5233", shirt:"#0F3A34", trouser:"#0C1C22", hat:"wide",    hatCol:"#4A3B24"}
+];
+
+var BOAT_SKINS = [
+  {id:"b1", n:"Old ski-boat",      sub:"it floats, mostly",        lvl:1,  cost:0,
+   hull:"#101E28", cabin:"#162833", trim:"#2B4453", len:44},
+  {id:"b2", n:"Cape ski-boat",     sub:"twin outboards",           lvl:6,  cost:25000,
+   hull:"#16323E", cabin:"#1E4452", trim:"#3E7286", len:48},
+  {id:"b3", n:"Deep-sea cat",      sub:"catamaran hull",           lvl:14, cost:250000,
+   hull:"#1A2E3E", cabin:"#E6EDE9", trim:"#5FA8C4", len:54},
+  {id:"b4", n:"Sportfisher",       sub:"flybridge and outriggers", lvl:24, cost:1200000,
+   hull:"#E6EDE9", cabin:"#243642", trim:"#C8412E", len:60},
+  {id:"b5", n:"Bluewater cruiser", sub:"tuna tower",               lvl:33, cost:6000000,
+   hull:"#0E2A36", cabin:"#E8DFC8", trim:"#E8A22E", len:66},
+  {id:"b6", n:"Sodwana battlewagon", sub:"built for the shelf",    lvl:42, cost:20000000,
+   hull:"#101820", cabin:"#2E4656", trim:"#5FDCC0", len:74}
+];

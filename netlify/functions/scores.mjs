@@ -16,8 +16,9 @@ const PREFIX = "p/";
 const TOP_N = 50;
 const MAX_NAME = 18;
 
-/* Bounds: a haul above this is not reachable by playing, so treat it as junk. */
-const MAX_BEST = 2000000;
+/* Bounds: a haul above these is not reachable by playing, so treat it as junk.
+   Sodwana hauls run into the hundreds of millions, hence the headroom. */
+const MAX_BEST = 2000000000;
 const MAX_DEPTH = 1000;
 const MAX_CASTS = 1000000;
 

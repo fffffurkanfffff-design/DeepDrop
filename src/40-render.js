@@ -395,24 +395,92 @@ function waterAt(d, tint){
   return "rgb(2,7,12)";
 }
 
-function drawBoat(sx, sy){
+/* The boat and the angler on it are cosmetic, chosen in the Crew tab. */
+function drawAngler(c, scale){
+  var s = scale || 1;
   ctx.save();
-  ctx.translate(sx, sy + Math.sin(t*1.5)*2.2);
-  ctx.fillStyle = "#101E28";
+  ctx.scale(s, s);
+
+  /* legs */
+  ctx.fillStyle = c.trouser;
+  ctx.fillRect(-3.4, -8, 2.8, 8);
+  ctx.fillRect(0.8, -8, 2.8, 8);
+  /* torso */
+  ctx.fillStyle = c.shirt;
   ctx.beginPath();
-  ctx.moveTo(-44,-6); ctx.lineTo(44,-6); ctx.lineTo(30,10); ctx.lineTo(-32,10); ctx.closePath(); ctx.fill();
-  ctx.fillStyle = "#162833";
-  ctx.beginPath(); ctx.rect(-16,-22,26,16); ctx.fill();
-  ctx.strokeStyle = "#2B4453"; ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.moveTo(-44,-6); ctx.lineTo(44,-6); ctx.stroke();
-  ctx.fillStyle = "rgba(255,162,58,.10)";
-  ctx.beginPath(); ctx.arc(-3,-15,13,0,6.284); ctx.fill();
-  ctx.fillStyle = "rgba(255,162,58,.9)";
-  ctx.beginPath(); ctx.arc(-3,-15,2.6,0,6.284); ctx.fill();
-  ctx.strokeStyle = "#2B4453"; ctx.lineWidth = 2; ctx.lineCap = "round";
-  ctx.beginPath(); ctx.moveTo(14,-8); ctx.lineTo(40,-30); ctx.stroke();
+  ctx.moveTo(-4.4, -8); ctx.lineTo(-3.6, -18);
+  ctx.lineTo(3.6, -18);  ctx.lineTo(4.4, -8);
+  ctx.closePath(); ctx.fill();
+  /* arms, angled out to the rod */
+  ctx.strokeStyle = c.shirt; ctx.lineWidth = 2.4; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(3.0, -16); ctx.lineTo(8.5, -12); ctx.stroke();
+  ctx.strokeStyle = c.skin; ctx.lineWidth = 2.0;
+  ctx.beginPath(); ctx.moveTo(8.5, -12); ctx.lineTo(11.5, -13.5); ctx.stroke();
+  /* head */
+  ctx.fillStyle = c.skin;
+  ctx.beginPath(); ctx.arc(0, -21.5, 3.6, 0, 6.284); ctx.fill();
+  /* headwear */
+  ctx.fillStyle = c.hatCol;
+  if(c.hat === "cap"){
+    ctx.beginPath(); ctx.arc(0, -23, 3.8, Math.PI, 0); ctx.fill();
+    ctx.fillRect(0, -23.6, 6.4, 1.5);
+  } else if(c.hat === "peaked"){
+    ctx.beginPath(); ctx.arc(0, -23.2, 4.0, Math.PI, 0); ctx.fill();
+    ctx.fillRect(-1, -24.2, 7.4, 1.8);
+    ctx.fillStyle = "#E6EDE9"; ctx.fillRect(-3.8, -24.6, 7.6, 1.2);
+  } else if(c.hat === "sou"){
+    ctx.beginPath(); ctx.arc(0, -23, 4.4, Math.PI, 0); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0, -22.6, 7.2, 1.8, 0, 0, 6.284); ctx.fill();
+  } else if(c.hat === "wide"){
+    ctx.beginPath(); ctx.arc(0, -23.4, 3.9, Math.PI, 0); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0, -22.4, 8.6, 2.0, 0, 0, 6.284); ctx.fill();
+  }
   ctx.restore();
 }
+
+function drawBoat(sx, sy){
+  var b = boatById(boatSkin), c = charById(charSkin);
+  var L = b.len, half = L/2;
+  ctx.save();
+  ctx.translate(sx, sy + Math.sin(t*1.5)*2.2);
+  ctx.rotate(Math.sin(t*0.9)*0.015);
+
+  /* hull */
+  ctx.fillStyle = b.hull;
+  ctx.beginPath();
+  ctx.moveTo(-half, -6); ctx.lineTo(half, -6);
+  ctx.lineTo(half*0.68, 10); ctx.lineTo(-half*0.73, 10);
+  ctx.closePath(); ctx.fill();
+  /* waterline stripe */
+  ctx.fillStyle = b.trim;
+  ctx.fillRect(-half, -6.5, L, 1.6);
+  /* cabin */
+  ctx.fillStyle = b.cabin;
+  ctx.beginPath(); ctx.rect(-half*0.40, -22, L*0.32, 16); ctx.fill();
+  ctx.fillStyle = "rgba(140,190,210,.35)";
+  ctx.fillRect(-half*0.34, -19.5, L*0.20, 6);
+  /* cabin light */
+  ctx.fillStyle = "rgba(255,162,58,.10)";
+  ctx.beginPath(); ctx.arc(-half*0.24, -15, 13, 0, 6.284); ctx.fill();
+  ctx.fillStyle = "rgba(255,162,58,.9)";
+  ctx.beginPath(); ctx.arc(-half*0.24, -15, 2.4, 0, 6.284); ctx.fill();
+
+  /* the angler, standing aft with the rod */
+  ctx.save();
+  ctx.translate(half*0.30, -6);
+  drawAngler(c, 1);
+  ctx.restore();
+
+  /* rod, running from the angler's hands out over the stern */
+  ctx.strokeStyle = b.trim; ctx.lineWidth = 2; ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(half*0.30 + 11, -19);
+  ctx.quadraticCurveTo(half*0.72, -30, half*0.96, -34);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
 
 function draw(){
   var a = areaById(area);

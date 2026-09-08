@@ -264,6 +264,7 @@ input[type=text]::placeholder{color:var(--dim);opacity:.7}
 .tier{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;
   padding:2px 7px;border:1px solid currentColor;border-radius:2px;align-self:flex-start}
 .tier.b{color:var(--foam)} .tier.i{color:var(--sodium)} .tier.e{color:var(--rust)}
+.tier.l{color:#B77BE8}
 
 /* species table on the map page */
 .specwrap{border-top:1px solid var(--chart);max-height:340px;overflow-y:auto;scrollbar-width:thin}
@@ -283,6 +284,23 @@ input[type=text]::placeholder{color:var(--dim);opacity:.7}
 .foot kbd{font-family:var(--mono);font-size:11px;background:var(--hull-2);border:1px solid var(--chart);
   padding:1px 5px;border-radius:2px;color:var(--bone)}
 @media (prefers-reduced-motion:reduce){*{transition-duration:.01ms !important}}
+
+/* ---- skill dial (a maxed skill becomes adjustable) ---- */
+.dial{display:flex;align-items:center;gap:9px;padding-top:2px}
+.dial input[type=range]{flex:1;min-width:0;accent-color:var(--sodium);height:18px;margin:0}
+.dial .pct{font-family:var(--mono);font-size:11.5px;color:var(--sodium);
+  font-variant-numeric:tabular-nums;min-width:38px;text-align:right}
+.dial .lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--dim);white-space:nowrap}
+.card.maxed{box-shadow:inset 3px 0 0 var(--sodium)}
+
+/* ---- crew ---- */
+.crewpreview{padding:16px;border-bottom:1px solid var(--chart-soft);text-align:center;
+  background:linear-gradient(180deg,#0A141D 0%,#0E2A36 62%,#0B2029 100%)}
+.crewpreview canvas{max-width:100%;height:auto;display:block;margin:0 auto}
+.crewpreview .hint{margin-top:8px}
+.skincard-sw{display:flex;gap:5px;align-items:center}
+.sw{width:15px;height:15px;border-radius:2px;border:1px solid rgba(255,255,255,.18)}
 
 </style>
 </head>
@@ -313,6 +331,7 @@ input[type=text]::placeholder{color:var(--dim);opacity:.7}
     <button type="button" data-view="shop">Shop</button>
     <button type="button" data-view="skills">Skills</button>
     <button type="button" data-view="map">Fisheries</button>
+    <button type="button" data-view="crew">Crew</button>
   </nav>
 
   <!-- ============ FISH ============ -->
@@ -347,6 +366,25 @@ input[type=text]::placeholder{color:var(--dim);opacity:.7}
       <section class="panel">
         <h2>Skipper<span class="tag" id="skipperTag"></span></h2>
         <div id="skipperBody"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Your code<span class="tag">Carry progress</span></h2>
+        <div class="skip">
+          <p class="hint">This is your progress as a code. Copy it, then paste it into the
+             game on another computer to carry everything across.</p>
+          <div class="code-box">
+            <input type="text" id="codeOut" readonly aria-label="Your save code">
+            <button class="mini go" type="button" id="codeCopy">Copy</button>
+          </div>
+          <p class="hint">Enter a code to load it:</p>
+          <div class="code-box">
+            <input type="text" id="codeIn" placeholder="DD3-..." autocomplete="off"
+                   spellcheck="false" aria-label="Enter a save code">
+            <button class="mini go" type="button" id="codeLoad">Load</button>
+          </div>
+          <p class="hint" id="codeMsg"></p>
+        </div>
       </section>
 
       <section class="panel">
@@ -401,7 +439,7 @@ input[type=text]::placeholder{color:var(--dim);opacity:.7}
     <div class="page-head">
       <div>
         <h2>Fisheries</h2>
-        <p>Three stretches of the South African coast. Each holds fish the others don't,
+        <p>Four stretches of the South African coast. Each holds fish the others don't,
            and each one asks more of your gear than the last.</p>
       </div>
     </div>
@@ -415,6 +453,30 @@ input[type=text]::placeholder{color:var(--dim);opacity:.7}
         <tbody id="specBody"></tbody>
       </table>
     </div>
+  </div>
+
+  <!-- ============ CREW ============ -->
+  <div class="page" id="viewCrew" hidden>
+    <div class="page-head">
+      <div>
+        <h2>Crew &amp; Boat</h2>
+        <p>Spend your winnings on how you turn up. None of it changes how the game
+           plays &mdash; it just changes what everyone sees on the water.</p>
+      </div>
+      <div class="till">
+        <span class="lbl">Till</span>
+        <span class="amt"><span class="cur">R</span><span id="cash4">0</span></span>
+      </div>
+    </div>
+    <div class="crewpreview">
+      <canvas id="crewCv" width="420" height="200"></canvas>
+      <p class="hint" id="crewCaption"></p>
+    </div>
+    <div class="kindtabs" id="skinTabs">
+      <button type="button" data-skin="char" class="on">Skipper</button>
+      <button type="button" data-skin="boat">Boat</button>
+    </div>
+    <div class="grid" id="skinGrid"></div>
   </div>
 
   <p class="foot">
@@ -440,12 +502,12 @@ input[type=text]::placeholder{color:var(--dim);opacity:.7}
    xp     : xp multiplier
    ------------------------------------------------------------------------ */
 var RARITY = {
-  common:    {n:"Common",    spawn:1000, val:1.00, xp:4,   c:"#8FA6B2"},
-  uncommon:  {n:"Uncommon",  spawn:400,  val:1.15, xp:9,   c:"#5FDCC0"},
-  rare:      {n:"Rare",      spawn:140,  val:1.35, xp:20,  c:"#57A6F0"},
-  epic:      {n:"Epic",      spawn:42,   val:1.65, xp:50,  c:"#B77BE8"},
-  legendary: {n:"Legendary", spawn:9,    val:2.10, xp:130, c:"#FFA23A"},
-  mythic:    {n:"Mythic",    spawn:1.6,  val:3.20, xp:420, c:"#FF5E7A"}
+  common:    {n:"Common",    spawn:1000, val:1.00, xp:10,   c:"#8FA6B2"},
+  uncommon:  {n:"Uncommon",  spawn:400,  val:1.15, xp:20,   c:"#5FDCC0"},
+  rare:      {n:"Rare",      spawn:140,  val:1.35, xp:38,  c:"#57A6F0"},
+  epic:      {n:"Epic",      spawn:42,   val:1.65, xp:85,  c:"#B77BE8"},
+  legendary: {n:"Legendary", spawn:9,    val:2.10, xp:195, c:"#FFA23A"},
+  mythic:    {n:"Mythic",    spawn:1.6,  val:3.20, xp:590, c:"#FF5E7A"}
 };
 var RARITY_ORDER = ["common","uncommon","rare","epic","legendary","mythic"];
 
@@ -462,7 +524,11 @@ var AREAS = [
   {id:"sl", n:"St Lucia",     sub:"KwaZulu-Natal", tier:"Expert",
    lvl:20, maxDepth:460, bombFrom:120, bombDen:0.020,
    blurb:"The subtropical drop-off. Billfish, sharks and the deep canyon.",
-   sky:"#0B1622", tint:[16,72,80]}
+   sky:"#0B1622", tint:[16,72,80]},
+  {id:"sod", n:"Sodwana Bay", sub:"iSimangaliso, KZN", tier:"Legendary",
+   lvl:35, maxDepth:620, bombFrom:140, bombDen:0.026,
+   blurb:"The edge of the continental shelf. Nothing small lives out here.",
+   sky:"#0C1A26", tint:[18,80,86]}
 ];
 
 /* ---- species ------------------------------------------------------------
@@ -619,7 +685,7 @@ var FISH = [
    dep:[25,130], len:[38,62], sp:1.55, shape:"deep", tail:"lunate", dorsal:"twin", head:"blunt",
    back:"#2A4E7E", mid:"#7EA2C8", belly:"#D2E2EE", mark:"yellowfin", markCol:"#3E76B4"},
 
-  {id:"gtrevally", n:"Giant trevally", areas:["sl"], rar:"rare", kg:[10,60], rpk:74,
+  {id:"gtrevally", n:"Trevally", areas:["sl"], rar:"rare", kg:[10,60], rpk:74,
    dep:[40,200], len:[58,110], sp:1.6, shape:"deep", tail:"lunate", dorsal:"twin", head:"blunt",
    back:"#4A5560", mid:"#A6B2BC", belly:"#DDE4E9", mark:"none", markCol:"#333C44"},
 
@@ -639,37 +705,58 @@ var FISH = [
    dep:[70,300], len:[64,124], sp:1.8, shape:"torpedo", tail:"lunate", dorsal:"twin", head:"point",
    back:"#1E4468", mid:"#7EA6C4", belly:"#D6E6F0", mark:"yellowfin", markCol:"#E8C43C"},
 
-  {id:"wahoo", n:"Wahoo", areas:["sl"], rar:"epic", kg:[10,60], rpk:104,
+  {id:"wahoo", n:"Wahoo", areas:["sl","sod"], rar:"epic", kg:[10,60], rpk:104,
    dep:[80,300], len:[74,132], sp:1.95, shape:"slim", tail:"lunate", dorsal:"long", head:"point",
    back:"#26405C", mid:"#8098B4", belly:"#D2DEEA", mark:"bars", markCol:"#44648C"},
 
-  {id:"sailfish", n:"Sailfish", areas:["sl"], rar:"epic", kg:[20,70], rpk:112,
+  {id:"sailfish", n:"Sailfish", areas:["sl","sod"], rar:"epic", kg:[20,70], rpk:112,
    dep:[90,320], len:[92,146], sp:1.85, shape:"bill", tail:"lunate", dorsal:"sail", head:"bill",
    back:"#1E3E6E", mid:"#4E86C0", belly:"#CADCEE", mark:"stripe", markCol:"#7FB0DC"},
 
-  {id:"zambezi", n:"Zambezi shark", areas:["sl"], rar:"epic", kg:[80,300], rpk:32,
+  {id:"zambezi", n:"Zambezi shark", areas:["sl","sod"], rar:"epic", kg:[80,300], rpk:32,
    dep:[110,360], len:[110,172], sp:0.9, shape:"shark", tail:"shark", dorsal:"shark", head:"blunt",
    back:"#6E7468", mid:"#A2A898", belly:"#D6DACA", mark:"none", markCol:"#4E5448"},
 
-  {id:"blackmarlin", n:"Black marlin", areas:["sl"], rar:"legendary", kg:[100,600], rpk:64,
+  {id:"blackmarlin", n:"Black marlin", areas:["sl","sod"], rar:"legendary", kg:[100,600], rpk:64,
    dep:[180,440], len:[130,215], sp:1.6, shape:"bill", tail:"lunate", dorsal:"long", head:"bill",
    back:"#16324E", mid:"#3E76A8", belly:"#C4D8E8", mark:"none", markCol:"#4E8CC0"},
 
-  {id:"bluemarlin", n:"Blue marlin", areas:["sl"], rar:"legendary", kg:[80,450], rpk:68,
+  {id:"bluemarlin", n:"Blue marlin", areas:["sl","sod"], rar:"legendary", kg:[80,450], rpk:68,
    dep:[170,430], len:[126,204], sp:1.65, shape:"bill", tail:"lunate", dorsal:"long", head:"bill",
    back:"#1C3A72", mid:"#4A7CC4", belly:"#CCDCEF", mark:"stripe", markCol:"#6E9ED8"},
 
-  {id:"broadbill", n:"Broadbill swordfish", areas:["sl"], rar:"legendary", kg:[50,350], rpk:76,
+  {id:"broadbill", n:"Broadbill swordfish", areas:["sl","sod"], rar:"legendary", kg:[50,350], rpk:76,
    dep:[240,460], len:[120,196], sp:1.35, shape:"bill", tail:"lunate", dorsal:"sail", head:"bill",
    back:"#2E3A4A", mid:"#76879A", belly:"#CDD6DE", mark:"none", markCol:"#4A5666"},
 
-  {id:"tigershark", n:"Tiger shark", areas:["sl"], rar:"legendary", kg:[150,600], rpk:40,
+  {id:"tigershark", n:"Tiger shark", areas:["sl","sod"], rar:"legendary", kg:[150,600], rpk:40,
    dep:[200,450], len:[134,208], sp:0.85, shape:"shark", tail:"shark", dorsal:"shark", head:"blunt",
    back:"#5A6250", mid:"#96A084", belly:"#D2D8C4", mark:"bars", markCol:"#3A4034"},
 
-  {id:"coelacanth", n:"Coelacanth", areas:["sl"], rar:"mythic", kg:[30,90], rpk:0,
-   tag:true, dep:[330,460], len:[86,128], sp:0.32, shape:"deep", tail:"round", dorsal:"twin",
-   head:"blunt", back:"#22406A", mid:"#5F86B4", belly:"#9CBCD8", mark:"spots", markCol:"#DCE8F4"}
+  {id:"coelacanth", n:"Coelacanth", areas:["sl","sod"], rar:"mythic", kg:[30,90], rpk:1900,
+   bounty:true, dep:[330,460], len:[86,128], sp:0.32, shape:"deep", tail:"round", dorsal:"twin",
+   head:"blunt", back:"#22406A", mid:"#5F86B4", belly:"#9CBCD8", mark:"spots", markCol:"#DCE8F4"},
+
+  /* ===== Sodwana Bay - nothing under epic lives out here ===== */
+  {id:"mantaray", n:"Manta ray", areas:["sod"], rar:"epic", kg:[150,900], rpk:0,
+   tag:true, dep:[25,140], len:[120,190], sp:0.55, shape:"flat", tail:"point", dorsal:"low",
+   head:"shovel", back:"#1E2A38", mid:"#4A5C70", belly:"#DDE4EA", mark:"blotch", markCol:"#C6D2DC"},
+
+  {id:"potatobass", n:"Potato bass", areas:["sod"], rar:"epic", kg:[20,110], rpk:900,
+   dep:[40,180], len:[74,132], sp:0.45, shape:"verydeep", tail:"round", dorsal:"spiny",
+   head:"blunt", back:"#4E4A40", mid:"#9A9384", belly:"#CFC9BA", mark:"spots", markCol:"#332F28"},
+
+  {id:"kingfish", n:"Giant kingfish", areas:["sod"], rar:"legendary", kg:[35,85], rpk:1100,
+   dep:[30,160], len:[86,140], sp:1.7, shape:"deep", tail:"lunate", dorsal:"twin",
+   head:"blunt", back:"#3A4652", mid:"#9BA8B4", belly:"#DCE3E9", mark:"none", markCol:"#2A343E"},
+
+  {id:"dogtooth", n:"Dogtooth tuna", areas:["sod"], rar:"mythic", kg:[40,110], rpk:3800,
+   dep:[60,300], len:[96,152], sp:1.9, shape:"torpedo", tail:"lunate", dorsal:"twin",
+   head:"point", back:"#1C3A54", mid:"#6E92AE", belly:"#D2E0EA", mark:"stripe", markCol:"#8FB2C8"},
+
+  {id:"whaleshark", n:"Whale shark", areas:["sod"], rar:"mythic", kg:[900,4000], rpk:0,
+   tag:true, dep:[20,120], len:[170,240], sp:0.35, shape:"shark", tail:"shark", dorsal:"shark",
+   head:"blunt", back:"#2E4256", mid:"#5A7288", belly:"#D6DEE4", mark:"spots", markCol:"#E4ECF2"}
 ];
 
 /* ---- gear ---------------------------------------------------------------
@@ -687,16 +774,20 @@ var GEAR = {
     {id:"r4", n:"Penn Rampage Boat",           spec:"15 kg boat class",     lvl:10, cost:7500,   maxKg:60},
     {id:"r5", n:"Shimano T-Curve Stand-Up",    spec:"24 kg stand-up",       lvl:15, cost:22000,  maxKg:115},
     {id:"r6", n:"Penn International V",        spec:"37 kg game",           lvl:21, cost:60000,  maxKg:230},
-    {id:"r7", n:"Shimano Tiagra Ultra",        spec:"60 kg bluewater",      lvl:27, cost:150000, maxKg:480}
+    {id:"r7", n:"Shimano Tiagra Ultra",        spec:"60 kg bluewater",      lvl:27, cost:150000,  maxKg:480},
+    {id:"r8", n:"Penn International V 130",    spec:"130 lb unlimited",     lvl:30, cost:1000000, maxKg:750},
+    {id:"r9", n:"Shimano Tiagra Ultra 130",    spec:"130 lb tournament",    lvl:40, cost:5000000, maxKg:1500}
   ],
   reel: [
-    {id:"e1", n:"Shimano Sienna 2500",     spec:"4 kg drag, 150 m",     lvl:1,  cost:0,      depth:60,  drag:4,  spd:2.2},
-    {id:"e2", n:"Daiwa BG 4000",           spec:"7 kg drag, 220 m",     lvl:2,  cost:700,    depth:95,  drag:7,  spd:2.5},
-    {id:"e3", n:"Penn Battle III 6000",    spec:"11 kg drag, 300 m",    lvl:5,  cost:2200,   depth:140, drag:11, spd:2.8},
-    {id:"e4", n:"Penn Slammer IV 8500",    spec:"15 kg drag, 350 m",    lvl:8,  cost:6000,   depth:190, drag:15, spd:3.1},
-    {id:"e5", n:"Shimano Stella SW 14000", spec:"25 kg drag, 420 m",    lvl:13, cost:18000,  depth:250, drag:25, spd:3.4},
-    {id:"e6", n:"Penn International VI 30",spec:"36 kg full drag",      lvl:18, cost:45000,  depth:330, drag:36, spd:3.8},
-    {id:"e7", n:"Shimano Tiagra 50W",      spec:"45 kg lever drag",     lvl:24, cost:110000, depth:460, drag:45, spd:4.2}
+    {id:"e1", n:"Shimano Sienna 2500",     spec:"4 kg drag, 150 m",     lvl:1,  cost:0,      depth:60,  drag:4,  spd:2.2, holds:20},
+    {id:"e2", n:"Daiwa BG 4000",           spec:"7 kg drag, 220 m",     lvl:2,  cost:700,    depth:95,  drag:7,  spd:2.5, holds:35},
+    {id:"e3", n:"Penn Battle III 6000",    spec:"11 kg drag, 300 m",    lvl:5,  cost:2200,   depth:140, drag:11, spd:2.8, holds:55},
+    {id:"e4", n:"Penn Slammer IV 8500",    spec:"15 kg drag, 350 m",    lvl:8,  cost:6000,   depth:190, drag:15, spd:3.1, holds:75},
+    {id:"e5", n:"Shimano Stella SW 14000", spec:"25 kg drag, 420 m",    lvl:13, cost:18000,  depth:250, drag:25, spd:3.4, holds:125},
+    {id:"e6", n:"Penn International VI 30",spec:"36 kg full drag",      lvl:18, cost:45000,  depth:330, drag:36, spd:3.8, holds:180},
+    {id:"e7", n:"Shimano Tiagra 50W",      spec:"45 kg lever drag",     lvl:24, cost:110000,  depth:460, drag:45,  spd:4.2, holds:225},
+    {id:"e8", n:"Shimano Tiagra 130A",     spec:"70 kg lever drag",     lvl:30, cost:1000000, depth:560, drag:70,  spd:4.6, holds:750},
+    {id:"e9", n:"Penn International 130VSX", spec:"140 kg two-speed",   lvl:40, cost:5000000, depth:640, drag:140, spd:5.0, holds:1500}
   ],
   line: [
     {id:"l1", n:"Maxima Ultragreen",       spec:"4 kg mono",            lvl:1,  cost:0,     kg:4},
@@ -705,7 +796,9 @@ var GEAR = {
     {id:"l4", n:"Daiwa J-Braid x8",        spec:"24 kg, 0.28 mm",       lvl:9,  cost:5000,  kg:24},
     {id:"l5", n:"Sufix 832",               spec:"37 kg, 0.36 mm",       lvl:14, cost:15000, kg:37},
     {id:"l6", n:"PowerPro Hollow Ace",     spec:"60 kg hollow braid",   lvl:20, cost:42000, kg:60},
-    {id:"l7", n:"Jerry Brown Hollow",      spec:"100 kg hollow braid",  lvl:26, cost:95000, kg:100}
+    {id:"l7", n:"Jerry Brown Hollow",      spec:"100 kg hollow braid",  lvl:26, cost:95000,   kg:100},
+    {id:"l8", n:"Momoi Hi-Catch 400 lb",  spec:"180 kg mono leader",   lvl:30, cost:1000000, kg:188},
+    {id:"l9", n:"Momoi Diamond 800 lb",   spec:"360 kg big-game",      lvl:40, cost:5000000, kg:375}
   ],
   lure: [
     {id:"u1", n:"Mustad baitholder",  spec:"plain hook and bait",   lvl:1,  cost:0,     boost:0.00, val:1.00},
@@ -731,14 +824,16 @@ var SKILLS = {
   hookset:  {n:"Hookset",       blurb:"width of the bite",              unit:"cm",  base:11, step:2.4,  cost:220,  growth:1.80, dec:0, lvl:1},
   thumb:    {n:"Thumb control", blurb:"slows the drop for tight gaps",  unit:"% ",  base:0,  step:10,   cost:260,  growth:1.82, dec:0, lvl:1},
   chum:     {n:"Chumming",      blurb:"thins small fry out of the water", unit:"% ", base:0, step:11,   cost:420,  growth:1.86, dec:0, lvl:3},
+  scavenger:{n:"Scavenger",     blurb:"less debris in the water",        unit:"% ", base:0, step:11,   cost:380,  growth:1.84, dec:0, lvl:4},
   livewell: {n:"Livewell",      blurb:"how high the run bonus climbs",  unit:"x",   base:3,  step:0.45, cost:520,  growth:1.86, dec:1, lvl:6},
   deckhand: {n:"Deckhand",      blurb:"less drag from a heavy haul",    unit:"% ",  base:0,  step:9,    cost:700,  growth:1.85, dec:0, lvl:8},
   sense:    {n:"Fish sense",    blurb:"reads weight and rarity in the water", unit:"m", base:0, step:26, cost:900, growth:1.84, dec:0, lvl:11},
   steady:   {n:"Steady hands",  blurb:"lowers the risk of a break-off", unit:"% ",  base:0,  step:7,    cost:1400, growth:1.88, dec:0, lvl:14},
   monger:   {n:"Fishmonger",    blurb:"what the market pays you",       unit:"% ",  base:0,  step:8,    cost:2000, growth:1.90, dec:0, lvl:17},
-  sapper:   {n:"Sapper",        blurb:"shrug off the first mine each run", unit:"%",base:0,  step:12,   cost:3200, growth:1.92, dec:0, lvl:21}
+  sapper:   {n:"Sapper",        blurb:"shrug off the first mine each run", unit:"%",base:0,  step:12,   cost:3200, growth:1.92, dec:0, lvl:21},
+  sweeper:  {n:"Minesweeper",   blurb:"fewer mines laid in the water",   unit:"% ", base:0, step:11,   cost:2600, growth:1.90, dec:0, lvl:24}
 };
-var SKILL_ORDER = ["hookset","thumb","chum","livewell","deckhand","sense","steady","monger","sapper"];
+var SKILL_ORDER = ["hookset","thumb","chum","scavenger","livewell","deckhand","sense","steady","monger","sapper","sweeper"];
 var MAXLVL = 8;
 
 /* ---- junk and mines ----------------------------------------------------- */
@@ -750,8 +845,13 @@ var JUNK = [
 ];
 
 /* ---- levelling ---------------------------------------------------------- */
-var MAX_PLAYER_LVL = 30;
-function xpForLevel(n){ return Math.round(90 * Math.pow(n, 1.55)); }   /* xp to go from n to n+1 */
+var MAX_PLAYER_LVL = 45;
+/* Sodwana's epic-plus fish pay so much xp that without this the last ten
+   levels would fall in a handful of casts. Levels below 28 are untouched. */
+function xpForLevel(n){
+  var tail = 1 + Math.max(0, n - 28) / 8;
+  return Math.round(65 * Math.pow(n, 1.34) * tail);
+}   /* xp to go from n to n+1 */
 function xpTotalTo(n){
   var t = 0;
   for(var i=1;i<n;i++) t += xpForLevel(i);
@@ -768,8 +868,42 @@ function bodyRatio(f){ return SHAPE_RATIO[f.shape] || 0.32; }
 /* A fish is fought, not winched: line class is well below what a rig lands.
    Real 60 kg line takes a 400 kg marlin, so capacity is the class times this. */
 var LINE_FACTOR = 4;
-/* a reel lands roughly this multiple of its drag rating before it is spooled */
+/* legacy fallback if a reel has no explicit holds figure */
 var SPOOL_FACTOR = 5;
+
+/* ---- crew and boat skins -------------------------------------------------
+   Bought with the same rand the fish earn. Purely cosmetic - nothing here
+   changes how the game plays.
+   ------------------------------------------------------------------------ */
+var CHAR_SKINS = [
+  {id:"c1", n:"Deckhand",          sub:"shorts and a faded tee",   lvl:1,  cost:0,
+   skin:"#C08A5E", shirt:"#B8442F", trouser:"#2E3A44", hat:null,      hatCol:"#1E2A33"},
+  {id:"c2", n:"Ski-boat skipper",  sub:"cap, shades, sunblock",    lvl:5,  cost:15000,
+   skin:"#B87F52", shirt:"#2E6E7E", trouser:"#26313A", hat:"cap",     hatCol:"#14313A"},
+  {id:"c3", n:"Charter captain",   sub:"whites and a peaked cap",  lvl:12, cost:120000,
+   skin:"#C99A6E", shirt:"#E6EDE9", trouser:"#1C2833", hat:"peaked",  hatCol:"#0F1A22"},
+  {id:"c4", n:"Tournament angler", sub:"team shirt, fighting belt",lvl:20, cost:600000,
+   skin:"#A9724A", shirt:"#1E4E86", trouser:"#12202B", hat:"cap",     hatCol:"#123A66"},
+  {id:"c5", n:"Big-game skipper",  sub:"foul-weather gear",        lvl:30, cost:2500000,
+   skin:"#8E5F3C", shirt:"#E8A22E", trouser:"#22303A", hat:"sou",     hatCol:"#D18F22"},
+  {id:"c6", n:"Sodwana legend",    sub:"sun-bleached and salted",  lvl:40, cost:12000000,
+   skin:"#7C5233", shirt:"#0F3A34", trouser:"#0C1C22", hat:"wide",    hatCol:"#4A3B24"}
+];
+
+var BOAT_SKINS = [
+  {id:"b1", n:"Old ski-boat",      sub:"it floats, mostly",        lvl:1,  cost:0,
+   hull:"#101E28", cabin:"#162833", trim:"#2B4453", len:44},
+  {id:"b2", n:"Cape ski-boat",     sub:"twin outboards",           lvl:6,  cost:25000,
+   hull:"#16323E", cabin:"#1E4452", trim:"#3E7286", len:48},
+  {id:"b3", n:"Deep-sea cat",      sub:"catamaran hull",           lvl:14, cost:250000,
+   hull:"#1A2E3E", cabin:"#E6EDE9", trim:"#5FA8C4", len:54},
+  {id:"b4", n:"Sportfisher",       sub:"flybridge and outriggers", lvl:24, cost:1200000,
+   hull:"#E6EDE9", cabin:"#243642", trim:"#C8412E", len:60},
+  {id:"b5", n:"Bluewater cruiser", sub:"tuna tower",               lvl:33, cost:6000000,
+   hull:"#0E2A36", cabin:"#E8DFC8", trim:"#E8A22E", len:66},
+  {id:"b6", n:"Sodwana battlewagon", sub:"built for the shelf",    lvl:42, cost:20000000,
+   hull:"#101820", cabin:"#2E4656", trim:"#5FDCC0", len:74}
+];
 
 
 /* ---- 20-state.js ---- */
@@ -778,7 +912,11 @@ var SPOOL_FACTOR = 5;
    =========================================================================== */
 
 var lvl = {};                                    /* skill levels */
-for(var _sk in SKILLS) lvl[_sk] = 1;
+var dial = {};                                   /* 0-100, only once a skill is maxed */
+for(var _sk in SKILLS){ lvl[_sk] = 1; dial[_sk] = 100; }
+
+var charSkin = "c1", boatSkin = "b1";
+var ownedChar = ["c1"], ownedBoat = ["b1"];
 
 var owned = {rod:["r1"], reel:["e1"], line:["l1"], lure:["u1"]};
 var equip = {rod:"r1", reel:"e1", line:"l1", lure:"u1"};
@@ -814,13 +952,27 @@ function areaById(id){
   for(var i=0;i<AREAS.length;i++) if(AREAS[i].id === id) return AREAS[i];
   return AREAS[0];
 }
+function charById(id){
+  for(var i=0;i<CHAR_SKINS.length;i++) if(CHAR_SKINS[i].id === id) return CHAR_SKINS[i];
+  return CHAR_SKINS[0];
+}
+function boatById(id){
+  for(var i=0;i<BOAT_SKINS.length;i++) if(BOAT_SKINS[i].id === id) return BOAT_SKINS[i];
+  return BOAT_SKINS[0];
+}
 function fishById(id){
   for(var i=0;i<FISH.length;i++) if(FISH[i].id === id) return FISH[i];
   return null;
 }
 
 /* ---- skills ------------------------------------------------------------- */
-function sk(k){ return SKILLS[k].base + (lvl[k]-1)*SKILLS[k].step; }
+function sk(k){
+  var s = SKILLS[k], gain = (lvl[k]-1) * s.step;
+  if(lvl[k] >= MAXLVL) gain *= dial[k]/100;      /* maxed skills are adjustable */
+  return s.base + gain;
+}
+function skMax(k){ return SKILLS[k].base + (MAXLVL-1)*SKILLS[k].step; }
+function isDialled(k){ return lvl[k] >= MAXLVL; }
 function skillUnlocked(k){ return plevel >= SKILLS[k].lvl; }
 function skillCost(k){
   var s = SKILLS[k];
@@ -835,6 +987,8 @@ function reelBase(){ return reel().spd; }
 function weightPen(){ return 0.020 * (1 - sk("deckhand")/100); }
 function comboCap(){ return sk("livewell"); }
 function chumStrength(){ return sk("chum")/100; }
+function debrisCut(){ return sk("scavenger")/100; }
+function mineCut(){ return sk("sweeper")/100; }
 function senseRange(){ return sk("sense"); }
 function snapRelief(){ return sk("steady")/100; }
 function priceMult(){ return lure().val * (1 + sk("monger")/100); }
@@ -842,6 +996,7 @@ function sapperChance(){ return sk("sapper")/100; }
 
 /* the weight the whole rig handles before something gives */
 function lineCapacity(){ return line().kg * LINE_FACTOR; }
+function spoolCapacity(){ var r = reel(); return r.holds || r.drag * SPOOL_FACTOR; }
 function rigLimit(){ return Math.min(rod().maxKg, lineCapacity()); }
 
 /* ---- value, xp and weight ----------------------------------------------- */
@@ -906,22 +1061,31 @@ function allProfiles(){
 function writeProfiles(o){ try{ localStorage.setItem(PKEY, JSON.stringify(o)); }catch(e){} }
 
 function snapshot(){
-  var L = {};
-  for(var k in lvl) L[k] = lvl[k];
-  return {lvl:L, owned:{rod:owned.rod.slice(), reel:owned.reel.slice(),
+  var L = {}, D = {};
+  for(var k in lvl){ L[k] = lvl[k]; D[k] = dial[k]; }
+  return {lvl:L, dial:D, charSkin:charSkin, boatSkin:boatSkin,
+          ownedChar:ownedChar.slice(), ownedBoat:ownedBoat.slice(), owned:{rod:owned.rod.slice(), reel:owned.reel.slice(),
                         line:owned.line.slice(), lure:owned.lure.slice()},
           equip:{rod:equip.rod, reel:equip.reel, line:equip.line, lure:equip.lure},
           cash:cash, best:best, deepest:deepest, casts:casts,
           xp:xp, plevel:plevel, area:area, ts:Date.now()};
 }
 function applyState(s){
-  for(var k in lvl) lvl[k] = 1;
+  for(var k in lvl){ lvl[k] = 1; dial[k] = 100; }
+  charSkin = "c1"; boatSkin = "b1"; ownedChar = ["c1"]; ownedBoat = ["b1"];
   owned = {rod:["r1"], reel:["e1"], line:["l1"], lure:["u1"]};
   equip = {rod:"r1", reel:"e1", line:"l1", lure:"u1"};
   cash = 0; best = 0; deepest = 0; casts = 0; xp = 0; plevel = 1; area = "pa";
 
   if(s && typeof s === "object"){
     if(s.lvl){ for(var k2 in lvl){ if(typeof s.lvl[k2] === "number") lvl[k2] = Math.min(MAXLVL, Math.max(1, s.lvl[k2]|0)); } }
+    if(s.dial){ for(var k3 in dial){ if(typeof s.dial[k3] === "number") dial[k3] = Math.min(100, Math.max(0, Math.round(s.dial[k3]/10)*10)); } }
+    if(s.ownedChar && s.ownedChar.length) ownedChar = s.ownedChar.filter(function(i){ return charById(i).id === i; });
+    if(s.ownedBoat && s.ownedBoat.length) ownedBoat = s.ownedBoat.filter(function(i){ return boatById(i).id === i; });
+    if(ownedChar.indexOf("c1") < 0) ownedChar.unshift("c1");
+    if(ownedBoat.indexOf("b1") < 0) ownedBoat.unshift("b1");
+    if(s.charSkin && ownedChar.indexOf(s.charSkin) >= 0) charSkin = s.charSkin;
+    if(s.boatSkin && ownedBoat.indexOf(s.boatSkin) >= 0) boatSkin = s.boatSkin;
     if(s.owned){
       for(var kind in owned){
         if(s.owned[kind] && s.owned[kind].length){
@@ -947,6 +1111,13 @@ function applyState(s){
     xp = Math.max(0, s.xp|0);
     plevel = Math.min(MAX_PLAYER_LVL, Math.max(1, s.plevel|0 || 1));
     if(s.area && areaById(s.area).id === s.area && plevel >= areaById(s.area).lvl) area = s.area;
+
+    /* The levelling curve can change between versions. Never demote a saved
+       player, but let a big xp total pull them up, and keep the bar in range. */
+    var derived = 1;
+    while(derived < MAX_PLAYER_LVL && xp >= xpTotalTo(derived + 1)) derived++;
+    plevel = Math.max(plevel, derived);
+    if(xp < xpTotalTo(plevel)) xp = xpTotalTo(plevel);
   }
   cashShown = cash;
 }
@@ -985,6 +1156,8 @@ function checksum(s){
 }
 function b36(n){ return Math.max(0, Math.round(n)).toString(36).toUpperCase(); }
 
+/* Nine gear tiers and eleven skills no longer fit the old 3-bit fields, so
+   this is DD3. Each field stays under 2^53 so base36 round-trips exactly. */
 function packSkills(){
   var v = 0;
   for(var i=0;i<SKILL_ORDER.length;i++) v += (lvl[SKILL_ORDER[i]]-1) * Math.pow(8, i);
@@ -992,12 +1165,23 @@ function packSkills(){
 }
 function unpackSkills(v){
   var out = {};
+  for(var i=0;i<SKILL_ORDER.length;i++) out[SKILL_ORDER[i]] = Math.floor(v / Math.pow(8, i)) % 8 + 1;
+  return out;
+}
+function packDials(){
+  var v = 0;
+  for(var i=0;i<SKILL_ORDER.length;i++) v += Math.round(dial[SKILL_ORDER[i]]/10) * Math.pow(16, i);
+  return v;
+}
+function unpackDials(v){
+  var out = {};
   for(var i=0;i<SKILL_ORDER.length;i++){
-    out[SKILL_ORDER[i]] = Math.floor(v / Math.pow(8, i)) % 8 + 1;
+    var t = Math.floor(v / Math.pow(16, i)) % 16;
+    out[SKILL_ORDER[i]] = Math.min(100, t*10);
   }
   return out;
 }
-/* gear: 4 tiers of 3 bits (highest owned) + 4 equipped indexes of 3 bits */
+/* 4 bits per kind for the highest tier owned, 4 more for what is equipped */
 function packGear(){
   var kinds = ["rod","reel","line","lure"], v = 0;
   for(var i=0;i<4;i++){
@@ -1006,7 +1190,7 @@ function packGear(){
       if(owned[k].indexOf(GEAR[k][j].id) >= 0) top = j;
       if(equip[k] === GEAR[k][j].id) eq = j;
     }
-    v += top * Math.pow(8, i) + eq * Math.pow(8, i+4);
+    v += top * Math.pow(16, i) + eq * Math.pow(16, i+4);
   }
   return v;
 }
@@ -1015,39 +1199,91 @@ function unpackGear(v){
   var o = {rod:[], reel:[], line:[], lure:[]}, e = {};
   for(var i=0;i<4;i++){
     var k = kinds[i];
-    var top = Math.floor(v / Math.pow(8, i)) % 8;
-    var eq  = Math.floor(v / Math.pow(8, i+4)) % 8;
-    top = Math.min(top, GEAR[k].length-1);
-    eq  = Math.min(eq,  top);
+    var top = Math.min(Math.floor(v / Math.pow(16, i)) % 16, GEAR[k].length-1);
+    var eq  = Math.min(Math.floor(v / Math.pow(16, i+4)) % 16, top);
     for(var j=0;j<=top;j++) o[k].push(GEAR[k][j].id);
     e[k] = GEAR[k][eq].id;
   }
   return {owned:o, equip:e};
 }
+function packSkins(){
+  var ci = 0, bi = 0, oc = 0, ob = 0, i;
+  for(i=0;i<CHAR_SKINS.length;i++){
+    if(CHAR_SKINS[i].id === charSkin) ci = i;
+    if(ownedChar.indexOf(CHAR_SKINS[i].id) >= 0) oc += Math.pow(2, i);
+  }
+  for(i=0;i<BOAT_SKINS.length;i++){
+    if(BOAT_SKINS[i].id === boatSkin) bi = i;
+    if(ownedBoat.indexOf(BOAT_SKINS[i].id) >= 0) ob += Math.pow(2, i);
+  }
+  return ci + bi*16 + oc*256 + ob*Math.pow(2, 16);
+}
+function unpackSkins(v){
+  var ci = v % 16, bi = Math.floor(v/16) % 16;
+  var oc = Math.floor(v/256) % 256, ob = Math.floor(v/Math.pow(2,16)) % 256;
+  var chars = [], boats = [], i;
+  for(i=0;i<CHAR_SKINS.length;i++) if(Math.floor(oc/Math.pow(2,i)) % 2) chars.push(CHAR_SKINS[i].id);
+  for(i=0;i<BOAT_SKINS.length;i++) if(Math.floor(ob/Math.pow(2,i)) % 2) boats.push(BOAT_SKINS[i].id);
+  if(!chars.length) chars = ["c1"];
+  if(!boats.length) boats = ["b1"];
+  return {charSkin:(CHAR_SKINS[ci]||CHAR_SKINS[0]).id, boatSkin:(BOAT_SKINS[bi]||BOAT_SKINS[0]).id,
+          ownedChar:chars, ownedBoat:boats};
+}
 function encodeSave(){
   var areaIdx = 0;
   for(var i=0;i<AREAS.length;i++) if(AREAS[i].id === area) areaIdx = i;
-  var body = [b36(packSkills()), b36(packGear()), b36(cash), b36(best),
-              b36(deepest), b36(casts), b36(xp), b36(areaIdx*64 + plevel)].join("-");
-  return "DD2-" + body + "-" + checksum(body);
+  var body = [b36(packSkills()), b36(packDials()), b36(packGear()), b36(packSkins()),
+              b36(cash), b36(best), b36(deepest), b36(casts), b36(xp),
+              b36(areaIdx*64 + plevel)].join("-");
+  return "DD3-" + body + "-" + checksum(body);
+}
+/* Codes handed out before this update still work; missing fields take defaults. */
+var DD2_SKILLS = ["hookset","thumb","chum","livewell","deckhand","sense","steady","monger","sapper"];
+function decodeDD2(parts){
+  var body = parts.slice(1,9).join("-");
+  if(checksum(body) !== parts[9]) return null;
+  var a = parts.slice(1,9).map(function(p){ return parseInt(p, 36); });
+  if(a.some(function(n){ return isNaN(n) || n < 0; })) return null;
+
+  var L = {}, D = {};
+  for(var i=0;i<SKILL_ORDER.length;i++){ L[SKILL_ORDER[i]] = 1; D[SKILL_ORDER[i]] = 100; }
+  for(var j=0;j<DD2_SKILLS.length;j++) L[DD2_SKILLS[j]] = Math.floor(a[0] / Math.pow(8, j)) % 8 + 1;
+
+  var kinds = ["rod","reel","line","lure"], o = {rod:[],reel:[],line:[],lure:[]}, e = {};
+  for(var k=0;k<4;k++){
+    var kind = kinds[k];
+    var top = Math.min(Math.floor(a[1] / Math.pow(8, k)) % 8, GEAR[kind].length-1);
+    var eq  = Math.min(Math.floor(a[1] / Math.pow(8, k+4)) % 8, top);
+    for(var m=0;m<=top;m++) o[kind].push(GEAR[kind][m].id);
+    e[kind] = GEAR[kind][eq].id;
+  }
+  var pl = a[7] % 64, ai = Math.floor(a[7] / 64);
+  if(pl < 1 || pl > MAX_PLAYER_LVL || ai < 0 || ai >= AREAS.length) return null;
+  return {lvl:L, dial:D, owned:o, equip:e,
+          charSkin:"c1", boatSkin:"b1", ownedChar:["c1"], ownedBoat:["b1"],
+          cash:a[2], best:a[3], deepest:a[4], casts:a[5], xp:a[6],
+          plevel:pl, area:AREAS[ai].id};
 }
 function decodeSave(code){
   try{
     var parts = String(code).toUpperCase().replace(/[^A-Z0-9-]/g,"").split("-")
                   .filter(function(p){ return p.length; });
-    if(parts.length !== 10 || parts[0] !== "DD2") return null;
-    var body = parts.slice(1,9).join("-");
-    if(checksum(body) !== parts[9]) return null;
-    var a = parts.slice(1,9).map(function(p){ return parseInt(p, 36); });
-    if(a.some(function(n){ return isNaN(n) || n < 0; })) return null;
-    if(a[0] > Math.pow(8, SKILL_ORDER.length) || a[1] > Math.pow(8, 8)) return null;
+    if(parts.length === 10 && parts[0] === "DD2") return decodeDD2(parts);
+    if(parts.length !== 12 || parts[0] !== "DD3") return null;
+    var body = parts.slice(1,11).join("-");
+    if(checksum(body) !== parts[11]) return null;
+    var a = parts.slice(1,11).map(function(p){ return parseInt(p, 36); });
+    if(a.some(function(n){ return isNaN(n) || n < 0 || !isFinite(n); })) return null;
 
-    var g = unpackGear(a[1]);
-    var pl = a[7] % 64, ai = Math.floor(a[7] / 64);
+    var g = unpackGear(a[2]), sk = unpackSkins(a[3]);
+    var pl = a[9] % 64, ai = Math.floor(a[9] / 64);
     if(pl < 1 || pl > MAX_PLAYER_LVL || ai < 0 || ai >= AREAS.length) return null;
 
-    return {lvl:unpackSkills(a[0]), owned:g.owned, equip:g.equip,
-            cash:a[2], best:a[3], deepest:a[4], casts:a[5], xp:a[6],
+    return {lvl:unpackSkills(a[0]), dial:unpackDials(a[1]),
+            owned:g.owned, equip:g.equip,
+            charSkin:sk.charSkin, boatSkin:sk.boatSkin,
+            ownedChar:sk.ownedChar, ownedBoat:sk.ownedBoat,
+            cash:a[4], best:a[5], deepest:a[6], casts:a[7], xp:a[8],
             plevel:pl, area:AREAS[ai].id};
   }catch(e){ return null; }
 }
@@ -1153,7 +1389,7 @@ function spawnColumn(){
   }
 
   /* junk, shallow only */
-  var junkN = Math.round((3 + Math.round(Math.min(deep,200)/45)) * (1 - chum*0.85));
+  var junkN = Math.round((3 + Math.round(Math.min(deep,200)/45)) * (1 - debrisCut()*0.90));
   for(var j=0;j<junkN;j++){
     var jd = JUNK[Math.floor(Math.random()*JUNK.length)];
     var dd = 14 + Math.random()*Math.max(20, Math.min(deepLimit-14, 170));
@@ -1163,7 +1399,7 @@ function spawnColumn(){
   /* mines - deep water only, and only in the rougher fisheries */
   if(a.bombDen > 0 && deep > a.bombFrom){
     var span = deep - a.bombFrom;
-    var mines = Math.round(span * a.bombDen);
+    var mines = Math.round(span * a.bombDen * (1 - mineCut()*0.85));
     for(var m=0;m<mines;m++){
       var md = a.bombFrom + Math.random()*span;
       ents.push(makeEnt("mine", {n:"Sea mine"}, md, 0.10 + Math.random()*0.80, 0));
@@ -1258,7 +1494,7 @@ function catchEnt(e){
       return false;
     }
     /* reel - a big fish runs and empties the spool */
-    if(Math.random() < riskFor(e.kg / (reel().drag * SPOOL_FACTOR))){
+    if(Math.random() < riskFor(e.kg / spoolCapacity())){
       endRun("spool", e.def.n + " at " + fmtKg(e.kg) + " ran " + reel().n + " dry.");
       return false;
     }
@@ -1347,6 +1583,31 @@ function equipGear(kind, id){
   if(mode !== "idle" || owned[kind].indexOf(id) < 0) return;
   equip[kind] = id;
   sEquip(); save(); spawnColumn(); renderAll();
+}
+function buySkin(kind, id){
+  if(mode !== "idle") return;
+  var list = kind === "char" ? CHAR_SKINS : BOAT_SKINS;
+  var have = kind === "char" ? ownedChar : ownedBoat;
+  var item = null;
+  for(var i=0;i<list.length;i++) if(list[i].id === id) item = list[i];
+  if(!item) return;
+  if(have.indexOf(id) >= 0){ equipSkin(kind, id); return; }
+  if(plevel < item.lvl || cash < item.cost) return;
+  cash -= item.cost; cashShown = cash;
+  have.push(id);
+  if(kind === "char") charSkin = id; else boatSkin = id;
+  sBuy(); save(); renderAll();
+}
+function equipSkin(kind, id){
+  var have = kind === "char" ? ownedChar : ownedBoat;
+  if(have.indexOf(id) < 0) return;
+  if(kind === "char") charSkin = id; else boatSkin = id;
+  sEquip(); save(); renderAll();
+}
+function setDial(k, v){
+  if(lvl[k] < MAXLVL) return;
+  dial[k] = Math.min(100, Math.max(0, Math.round(v/10)*10));
+  save(); spawnColumn(); syncGauges();
 }
 function selectArea(id){
   if(mode !== "idle") return;
@@ -1856,24 +2117,92 @@ function waterAt(d, tint){
   return "rgb(2,7,12)";
 }
 
-function drawBoat(sx, sy){
+/* The boat and the angler on it are cosmetic, chosen in the Crew tab. */
+function drawAngler(c, scale){
+  var s = scale || 1;
   ctx.save();
-  ctx.translate(sx, sy + Math.sin(t*1.5)*2.2);
-  ctx.fillStyle = "#101E28";
+  ctx.scale(s, s);
+
+  /* legs */
+  ctx.fillStyle = c.trouser;
+  ctx.fillRect(-3.4, -8, 2.8, 8);
+  ctx.fillRect(0.8, -8, 2.8, 8);
+  /* torso */
+  ctx.fillStyle = c.shirt;
   ctx.beginPath();
-  ctx.moveTo(-44,-6); ctx.lineTo(44,-6); ctx.lineTo(30,10); ctx.lineTo(-32,10); ctx.closePath(); ctx.fill();
-  ctx.fillStyle = "#162833";
-  ctx.beginPath(); ctx.rect(-16,-22,26,16); ctx.fill();
-  ctx.strokeStyle = "#2B4453"; ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.moveTo(-44,-6); ctx.lineTo(44,-6); ctx.stroke();
-  ctx.fillStyle = "rgba(255,162,58,.10)";
-  ctx.beginPath(); ctx.arc(-3,-15,13,0,6.284); ctx.fill();
-  ctx.fillStyle = "rgba(255,162,58,.9)";
-  ctx.beginPath(); ctx.arc(-3,-15,2.6,0,6.284); ctx.fill();
-  ctx.strokeStyle = "#2B4453"; ctx.lineWidth = 2; ctx.lineCap = "round";
-  ctx.beginPath(); ctx.moveTo(14,-8); ctx.lineTo(40,-30); ctx.stroke();
+  ctx.moveTo(-4.4, -8); ctx.lineTo(-3.6, -18);
+  ctx.lineTo(3.6, -18);  ctx.lineTo(4.4, -8);
+  ctx.closePath(); ctx.fill();
+  /* arms, angled out to the rod */
+  ctx.strokeStyle = c.shirt; ctx.lineWidth = 2.4; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(3.0, -16); ctx.lineTo(8.5, -12); ctx.stroke();
+  ctx.strokeStyle = c.skin; ctx.lineWidth = 2.0;
+  ctx.beginPath(); ctx.moveTo(8.5, -12); ctx.lineTo(11.5, -13.5); ctx.stroke();
+  /* head */
+  ctx.fillStyle = c.skin;
+  ctx.beginPath(); ctx.arc(0, -21.5, 3.6, 0, 6.284); ctx.fill();
+  /* headwear */
+  ctx.fillStyle = c.hatCol;
+  if(c.hat === "cap"){
+    ctx.beginPath(); ctx.arc(0, -23, 3.8, Math.PI, 0); ctx.fill();
+    ctx.fillRect(0, -23.6, 6.4, 1.5);
+  } else if(c.hat === "peaked"){
+    ctx.beginPath(); ctx.arc(0, -23.2, 4.0, Math.PI, 0); ctx.fill();
+    ctx.fillRect(-1, -24.2, 7.4, 1.8);
+    ctx.fillStyle = "#E6EDE9"; ctx.fillRect(-3.8, -24.6, 7.6, 1.2);
+  } else if(c.hat === "sou"){
+    ctx.beginPath(); ctx.arc(0, -23, 4.4, Math.PI, 0); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0, -22.6, 7.2, 1.8, 0, 0, 6.284); ctx.fill();
+  } else if(c.hat === "wide"){
+    ctx.beginPath(); ctx.arc(0, -23.4, 3.9, Math.PI, 0); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0, -22.4, 8.6, 2.0, 0, 0, 6.284); ctx.fill();
+  }
   ctx.restore();
 }
+
+function drawBoat(sx, sy){
+  var b = boatById(boatSkin), c = charById(charSkin);
+  var L = b.len, half = L/2;
+  ctx.save();
+  ctx.translate(sx, sy + Math.sin(t*1.5)*2.2);
+  ctx.rotate(Math.sin(t*0.9)*0.015);
+
+  /* hull */
+  ctx.fillStyle = b.hull;
+  ctx.beginPath();
+  ctx.moveTo(-half, -6); ctx.lineTo(half, -6);
+  ctx.lineTo(half*0.68, 10); ctx.lineTo(-half*0.73, 10);
+  ctx.closePath(); ctx.fill();
+  /* waterline stripe */
+  ctx.fillStyle = b.trim;
+  ctx.fillRect(-half, -6.5, L, 1.6);
+  /* cabin */
+  ctx.fillStyle = b.cabin;
+  ctx.beginPath(); ctx.rect(-half*0.40, -22, L*0.32, 16); ctx.fill();
+  ctx.fillStyle = "rgba(140,190,210,.35)";
+  ctx.fillRect(-half*0.34, -19.5, L*0.20, 6);
+  /* cabin light */
+  ctx.fillStyle = "rgba(255,162,58,.10)";
+  ctx.beginPath(); ctx.arc(-half*0.24, -15, 13, 0, 6.284); ctx.fill();
+  ctx.fillStyle = "rgba(255,162,58,.9)";
+  ctx.beginPath(); ctx.arc(-half*0.24, -15, 2.4, 0, 6.284); ctx.fill();
+
+  /* the angler, standing aft with the rod */
+  ctx.save();
+  ctx.translate(half*0.30, -6);
+  drawAngler(c, 1);
+  ctx.restore();
+
+  /* rod, running from the angler's hands out over the stern */
+  ctx.strokeStyle = b.trim; ctx.lineWidth = 2; ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(half*0.30 + 11, -19);
+  ctx.quadraticCurveTo(half*0.72, -30, half*0.96, -34);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
 
 function draw(){
   var a = areaById(area);
@@ -2078,8 +2407,13 @@ var elKindTabs = document.getElementById("kindtabs"), elKindBlurb = document.get
     elGearGrid = document.getElementById("gearGrid");
 var elSkillGrid = document.getElementById("skillGrid");
 var elMapGrid = document.getElementById("mapGrid"), elSpecBody = document.getElementById("specBody");
+var elCash4 = document.getElementById("cash4");
+var elSkinTabs = document.getElementById("skinTabs"), elSkinGrid = document.getElementById("skinGrid");
+var elCrewCv = document.getElementById("crewCv"), elCrewCaption = document.getElementById("crewCaption");
+var skinKind = "char";
 var VIEWS = {fish:document.getElementById("viewFish"), shop:document.getElementById("viewShop"),
-             skills:document.getElementById("viewSkills"), map:document.getElementById("viewMap")};
+             skills:document.getElementById("viewSkills"), map:document.getElementById("viewMap"),
+             crew:document.getElementById("viewCrew")};
 
 /* ---- helpers ------------------------------------------------------------ */
 function rand(n){ return "R " + Math.round(n).toLocaleString("en-ZA"); }
@@ -2156,6 +2490,7 @@ function setView(v){
   if(v === "shop") renderShopTab();
   if(v === "skills") renderSkillsTab();
   if(v === "map") renderMapTab();
+  if(v === "crew") renderCrewTab();
   if(v === "fish") resize();
 }
 elNav.addEventListener("click", function(ev){
@@ -2180,6 +2515,7 @@ function renderHeader(){
   }
   var c = Math.round(cashShown).toLocaleString("en-ZA");
   elCash.textContent = c; elCash2.textContent = c; elCash3.textContent = c;
+  if(elCash4) elCash4.textContent = c;
   elRigTag.textContent = rod().n.split(" ")[0] + " · " + line().n;
 }
 
@@ -2257,7 +2593,7 @@ function renderShopTab(){
     if(shopKind === "rod")  stats = statChip("Handles", g.maxKg + " kg", cur.maxKg, g.maxKg);
     if(shopKind === "reel") stats = statChip("Depth", g.depth + " m", cur.depth, g.depth) +
                                     statChip("Drag", g.drag + " kg", cur.drag, g.drag) +
-                                    statChip("Before spooling", (g.drag*SPOOL_FACTOR) + " kg", cur.drag, g.drag) +
+                                    statChip("Before spooling", (g.holds || g.drag*SPOOL_FACTOR) + " kg", cur.holds || cur.drag*SPOOL_FACTOR, g.holds || g.drag*SPOOL_FACTOR) +
                                     statChip("Retrieve", g.spd.toFixed(1) + " kn", cur.spd, g.spd);
     if(shopKind === "line") stats = statChip("Class", g.kg + " kg", cur.kg, g.kg) +
                                     statChip("Lands about", (g.kg*LINE_FACTOR) + " kg", cur.kg, g.kg);
@@ -2317,18 +2653,25 @@ function renderSkillsTab(){
     var next = (sk(k) + s.step).toFixed(s.dec) + " " + s.unit;
 
     var btn;
-    if(locked) btn = '<span class="lock">Level ' + s.lvl + '</span>' +
-                     '<button class="buy" type="button" disabled>Locked</button>';
-    else if(maxed) btn = '<button class="buy owned" type="button" disabled>Maxed</button>';
+    if(locked) btn = '<span class="lock">Unlocks at level ' + s.lvl + '</span>' +
+                     '<button class="buy" type="button" disabled>' + rand(c) + '</button>';
+    else if(maxed) btn = '<span class="lock" style="color:var(--sodium)">Maxed &middot; adjustable</span>';
     else btn = '<button class="buy" type="button" data-skill="' + k + '"' +
                (cash >= c && mode === "idle" ? '' : ' disabled') + '>' +
                next + ' &middot; ' + rand(c) + '</button>';
 
-    h += '<div class="card' + (locked ? ' locked' : '') + '">' +
+    var dialRow = maxed
+      ? '<div class="dial"><span class="lbl">Intensity</span>' +
+          '<input type="range" min="0" max="100" step="10" value="' + dial[k] + '" ' +
+            'data-dialskill="' + k + '" aria-label="' + s.n + ' intensity">' +
+          '<span class="pct">' + dial[k] + '%</span></div>'
+      : '';
+
+    h += '<div class="card' + (locked ? ' locked' : '') + (maxed ? ' maxed' : '') + '">' +
            '<div class="card-top"><span class="card-name">' + s.n +
              '<em>' + s.blurb + '</em></span>' +
              '<span class="stat">now <b>' + now + '</b></span></div>' +
-           '<div class="pips">' + pips + '</div>' +
+           '<div class="pips">' + pips + '</div>' + dialRow +
            '<div class="card-foot">' + btn + '</div>' +
          '</div>';
   }
@@ -2341,6 +2684,17 @@ elSkillGrid.addEventListener("click", function(ev){
   buySkill(b.getAttribute("data-skill"));
   b.blur();
 });
+elSkillGrid.addEventListener("input", function(ev){
+  var r = ev.target.closest("input[data-dialskill]");
+  if(!r) return;
+  var k = r.getAttribute("data-dialskill");
+  setDial(k, +r.value);
+  var pct = r.parentNode.querySelector(".pct");
+  if(pct) pct.textContent = dial[k] + "%";
+  var card = r.closest(".card");
+  var now = card && card.querySelector(".stat b");
+  if(now) now.textContent = sk(k).toFixed(SKILLS[k].dec) + " " + SKILLS[k].unit;
+});
 
 /* ---- fisheries ---------------------------------------------------------- */
 function renderMapTab(){
@@ -2349,7 +2703,8 @@ function renderMapTab(){
     var a = AREAS[i];
     var locked = plevel < a.lvl;
     var on = area === a.id;
-    var tierCls = a.tier === "Beginner" ? "b" : a.tier === "Intermediate" ? "i" : "e";
+    var tierCls = a.tier === "Beginner" ? "b" : a.tier === "Intermediate" ? "i"
+                : a.tier === "Expert" ? "e" : "l";
     var n = 0;
     for(var j=0;j<FISH.length;j++) if(FISH[j].areas.indexOf(a.id) >= 0) n++;
 
@@ -2560,22 +2915,6 @@ function renderSkipper(){
           '<button class="mini" type="button" data-act="new">New skipper</button>' +
           '<button class="mini" type="button" data-act="cancel">Back</button>' +
         '</div>' + msg + '<div class="who">' + w + '</div></div>';
-  } else if(skipperView === "code"){
-    elSkipBody.innerHTML =
-      '<div class="skip">' +
-        '<p class="hint">Your progress as a code. Copy it, then paste it into the game on another ' +
-        'computer to carry everything across.</p>' +
-        '<div class="code-box">' +
-          '<input type="text" id="codeOut" readonly value="' + esc(encodeSave()) + '">' +
-          '<button class="mini go" type="button" data-act="copy">Copy</button>' +
-        '</div>' +
-        '<p class="hint">Paste a code here to load it:</p>' +
-        '<div class="code-box">' +
-          '<input type="text" id="codeIn" placeholder="DD2-..." autocomplete="off">' +
-          '<button class="mini go" type="button" data-act="restore">Load</button>' +
-        '</div>' + msg +
-        '<div class="skip-actions"><button class="mini" type="button" data-act="cancel">Back</button></div>' +
-      '</div>';
   } else {
     elSkipBody.innerHTML =
       '<div class="skip">' +
@@ -2588,7 +2927,6 @@ function renderSkipper(){
         '<div class="skip-actions">' +
           '<button class="mini" type="button" data-act="switch">Switch</button>' +
           '<button class="mini" type="button" data-act="new">New</button>' +
-          '<button class="mini" type="button" data-act="code">Save code</button>' +
         '</div>' + msg +
       '</div>';
   }
@@ -2644,42 +2982,54 @@ function claimName(){
   }
   switchTo(name, {});
 }
+function codeSay(kind, text){
+  var el = document.getElementById("codeMsg");
+  if(!el) return;
+  el.className = "hint " + kind;
+  el.textContent = text;
+}
+function refreshCode(){
+  var el = document.getElementById("codeOut");
+  if(el && document.activeElement !== el) el.value = encodeSave();
+}
 function copyCode(){
   var el = document.getElementById("codeOut");
   if(!el) return;
-  var done = function(){ skipperMsg = {k:"ok", t:"Code copied."}; renderSkipper(); };
+  var done = function(){ codeSay("ok", "Code copied."); };
   try{
     el.select(); el.setSelectionRange(0, 99999);
     if(navigator.clipboard && navigator.clipboard.writeText){
       navigator.clipboard.writeText(el.value).then(done, function(){
         try{ document.execCommand("copy"); done(); }
-        catch(e){ skipperMsg = {k:"warn", t:"Copy it by hand: select the code and press Ctrl+C."}; renderSkipper(); }
+        catch(e){ codeSay("warn", "Copy it by hand: select the code and press Ctrl+C."); }
       });
       return;
     }
     document.execCommand("copy"); done();
   }catch(e){
-    skipperMsg = {k:"warn", t:"Copy it by hand: select the code and press Ctrl+C."};
-    renderSkipper();
+    codeSay("warn", "Copy it by hand: select the code and press Ctrl+C.");
   }
 }
 function restoreCode(){
-  if(mode !== "idle"){ skipperMsg = {k:"warn", t:"Finish the cast first."}; renderSkipper(); return; }
+  if(mode !== "idle"){ codeSay("warn", "Finish the cast first."); return; }
   var el = document.getElementById("codeIn");
   if(!el) return;
-  var s = decodeSave(el.value);
-  if(!s){ skipperMsg = {k:"warn", t:"That code did not read right. Check it and try again."}; renderSkipper(); return; }
+  var raw = el.value.trim();
+  if(!raw){ codeSay("warn", "Paste a code into the box first."); return; }
+  var s = decodeSave(raw);
+  if(!s){ codeSay("warn", "That code did not read right. Check it and try again."); return; }
   applyState(s);
   if(!profile) profile = "Skipper";
   save(); spawnColumn(); renderAll(); pushScore();
-  skipperView = "main";
-  skipperMsg = {k:"ok", t:"Progress loaded."};
-  renderSkipper();
+  el.value = "";
+  codeSay("ok", "Progress loaded — level " + plevel + ", " + rand(cash) + ".");
 }
 
 /* ---- render everything -------------------------------------------------- */
 function renderAll(){
   renderHeader();
+  refreshCode();
+  renderCrewTab();
   renderHaul();
   renderSkipper();
   renderLeaderboard();
@@ -2688,6 +3038,117 @@ function renderAll(){
   renderMapTab();
   syncGauges();
 }
+
+/* ---- crew and boat ------------------------------------------------------ */
+function renderCrewPreview(){
+  if(!elCrewCv) return;
+  var c = elCrewCv, pctx = c.getContext("2d");
+  /* drawBoat paints through the shared ctx, so lend it this canvas briefly */
+  var keepCtx = ctx, keepDpr = dpr;
+  ctx = pctx; dpr = 1;
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,c.width,c.height);
+
+  var waterY = c.height*0.66;
+  var g = ctx.createLinearGradient(0, waterY, 0, c.height);
+  g.addColorStop(0, "#0E4152"); g.addColorStop(1, "#062430");
+  ctx.fillStyle = g; ctx.fillRect(0, waterY, c.width, c.height-waterY);
+
+  ctx.strokeStyle = "rgba(150,214,214,.42)"; ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  for(var wx=0; wx<=c.width; wx+=6){
+    var wy = waterY + Math.sin(wx*0.045 + t*1.7)*2.2;
+    if(wx === 0) ctx.moveTo(wx,wy); else ctx.lineTo(wx,wy);
+  }
+  ctx.stroke();
+
+  /* the whole point of this screen is seeing the detail, so draw it large */
+  var s = 2.1;
+  ctx.save();
+  ctx.translate(c.width/2, waterY);
+  ctx.scale(s, s);
+  ctx.translate(-c.width/2, -waterY);
+  drawBoat(c.width/2, waterY);
+  ctx.restore();
+
+  ctx = keepCtx; dpr = keepDpr;
+}
+
+function renderCrewTab(){
+  if(!elSkinGrid) return;
+  var list = skinKind === "char" ? CHAR_SKINS : BOAT_SKINS;
+  var have = skinKind === "char" ? ownedChar : ownedBoat;
+  var wearing = skinKind === "char" ? charSkin : boatSkin;
+
+  var tabs = elSkinTabs.querySelectorAll("button[data-skin]");
+  for(var ti=0; ti<tabs.length; ti++){
+    tabs[ti].classList.toggle("on", tabs[ti].getAttribute("data-skin") === skinKind);
+  }
+
+  var h = "";
+  for(var i=0;i<list.length;i++){
+    var it = list[i];
+    var owned2 = have.indexOf(it.id) >= 0;
+    var on = wearing === it.id;
+    var locked = plevel < it.lvl;
+
+    var sw = skinKind === "char"
+      ? [it.shirt, it.trouser, it.hatCol || it.skin]
+      : [it.hull, it.cabin, it.trim];
+    var swatch = '<span class="skincard-sw">';
+    for(var q=0;q<sw.length;q++) swatch += '<span class="sw" style="background:' + sw[q] + '"></span>';
+    swatch += '</span>';
+
+    var btn;
+    if(locked) btn = '<span class="lock">Unlocks at level ' + it.lvl + '</span>' +
+                     '<button class="buy" type="button" disabled>' + rand(it.cost) + '</button>';
+    else if(on) btn = '<button class="buy on" type="button" disabled>Wearing</button>';
+    else if(owned2) btn = '<button class="buy owned" type="button" data-skinkind="' + skinKind +
+                          '" data-skinid="' + it.id + '">Wear</button>';
+    else btn = '<button class="buy" type="button" data-skinkind="' + skinKind + '" data-skinid="' + it.id + '"' +
+               (cash >= it.cost && mode === "idle" ? '' : ' disabled') + '>' + rand(it.cost) + '</button>';
+
+    h += '<div class="card' + (on ? ' equipped' : '') + (locked ? ' locked' : '') + '">' +
+           '<div class="card-top"><span class="card-name">' + esc(it.n) +
+             '<em>' + esc(it.sub) + '</em></span>' + swatch + '</div>' +
+           '<div class="card-foot">' + btn + '</div>' +
+         '</div>';
+  }
+  elSkinGrid.innerHTML = h;
+  if(elCrewCaption){
+    elCrewCaption.textContent = charById(charSkin).n + " aboard the " + boatById(boatSkin).n + ".";
+  }
+  renderCrewPreview();
+}
+if(elSkinTabs){
+  elSkinTabs.addEventListener("click", function(ev){
+    var b = ev.target.closest("button[data-skin]");
+    if(!b) return;
+    skinKind = b.getAttribute("data-skin");
+    renderCrewTab(); b.blur();
+  });
+}
+if(elSkinGrid){
+  elSkinGrid.addEventListener("click", function(ev){
+    var b = ev.target.closest("button[data-skinid]");
+    if(!b) return;
+    buySkin(b.getAttribute("data-skinkind"), b.getAttribute("data-skinid"));
+    b.blur();
+  });
+}
+
+/* The save-code panel is static markup, so its buttons wire up once and the
+   readonly field is refreshed by renderAll rather than re-rendered. */
+(function(){
+  var copyBtn = document.getElementById("codeCopy");
+  var loadBtn = document.getElementById("codeLoad");
+  var inp = document.getElementById("codeIn");
+  if(copyBtn) copyBtn.addEventListener("click", function(){ copyCode(); this.blur(); });
+  if(loadBtn) loadBtn.addEventListener("click", function(){ restoreCode(); this.blur(); });
+  if(inp) inp.addEventListener("keydown", function(ev){
+    if(ev.key === "Enter"){ ev.preventDefault(); restoreCode(); }
+  });
+})();
 
 
 /* ---- 60-main.js ---- */
@@ -2717,6 +3178,7 @@ document.addEventListener("keydown", function(e){
   if(e.key === "2") setView("shop");
   if(e.key === "3") setView("skills");
   if(e.key === "4") setView("map");
+  if(e.key === "5") setView("crew");
 });
 document.addEventListener("keyup", function(e){
   if(e.key === "ArrowLeft" || e.key === "a" || e.key === "A") keyL = false;
@@ -2766,6 +3228,9 @@ function frame(now){
     step(dt);
     draw();
     if(mode === "down" || mode === "up") syncGauges();
+  } else if(view === "crew"){
+    t += dt;                       /* keeps the preview boat bobbing */
+    renderCrewPreview();
   }
   requestAnimationFrame(frame);
 }

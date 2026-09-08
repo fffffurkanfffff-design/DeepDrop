@@ -24,6 +24,7 @@
     <button type="button" data-view="shop">Shop</button>
     <button type="button" data-view="skills">Skills</button>
     <button type="button" data-view="map">Fisheries</button>
+    <button type="button" data-view="crew">Crew</button>
   </nav>
 
   <!-- ============ FISH ============ -->
@@ -58,6 +59,25 @@
       <section class="panel">
         <h2>Skipper<span class="tag" id="skipperTag"></span></h2>
         <div id="skipperBody"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Your code<span class="tag">Carry progress</span></h2>
+        <div class="skip">
+          <p class="hint">This is your progress as a code. Copy it, then paste it into the
+             game on another computer to carry everything across.</p>
+          <div class="code-box">
+            <input type="text" id="codeOut" readonly aria-label="Your save code">
+            <button class="mini go" type="button" id="codeCopy">Copy</button>
+          </div>
+          <p class="hint">Enter a code to load it:</p>
+          <div class="code-box">
+            <input type="text" id="codeIn" placeholder="DD3-..." autocomplete="off"
+                   spellcheck="false" aria-label="Enter a save code">
+            <button class="mini go" type="button" id="codeLoad">Load</button>
+          </div>
+          <p class="hint" id="codeMsg"></p>
+        </div>
       </section>
 
       <section class="panel">
@@ -112,7 +132,7 @@
     <div class="page-head">
       <div>
         <h2>Fisheries</h2>
-        <p>Three stretches of the South African coast. Each holds fish the others don't,
+        <p>Four stretches of the South African coast. Each holds fish the others don't,
            and each one asks more of your gear than the last.</p>
       </div>
     </div>
@@ -126,6 +146,30 @@
         <tbody id="specBody"></tbody>
       </table>
     </div>
+  </div>
+
+  <!-- ============ CREW ============ -->
+  <div class="page" id="viewCrew" hidden>
+    <div class="page-head">
+      <div>
+        <h2>Crew &amp; Boat</h2>
+        <p>Spend your winnings on how you turn up. None of it changes how the game
+           plays &mdash; it just changes what everyone sees on the water.</p>
+      </div>
+      <div class="till">
+        <span class="lbl">Till</span>
+        <span class="amt"><span class="cur">R</span><span id="cash4">0</span></span>
+      </div>
+    </div>
+    <div class="crewpreview">
+      <canvas id="crewCv" width="420" height="200"></canvas>
+      <p class="hint" id="crewCaption"></p>
+    </div>
+    <div class="kindtabs" id="skinTabs">
+      <button type="button" data-skin="char" class="on">Skipper</button>
+      <button type="button" data-skin="boat">Boat</button>
+    </div>
+    <div class="grid" id="skinGrid"></div>
   </div>
 
   <p class="foot">

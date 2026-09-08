@@ -97,7 +97,7 @@ function spawnColumn(){
   }
 
   /* junk, shallow only */
-  var junkN = Math.round((3 + Math.round(Math.min(deep,200)/45)) * (1 - chum*0.85));
+  var junkN = Math.round((3 + Math.round(Math.min(deep,200)/45)) * (1 - debrisCut()*0.90));
   for(var j=0;j<junkN;j++){
     var jd = JUNK[Math.floor(Math.random()*JUNK.length)];
     var dd = 14 + Math.random()*Math.max(20, Math.min(deepLimit-14, 170));
@@ -107,7 +107,7 @@ function spawnColumn(){
   /* mines - deep water only, and only in the rougher fisheries */
   if(a.bombDen > 0 && deep > a.bombFrom){
     var span = deep - a.bombFrom;
-    var mines = Math.round(span * a.bombDen);
+    var mines = Math.round(span * a.bombDen * (1 - mineCut()*0.85));
     for(var m=0;m<mines;m++){
       var md = a.bombFrom + Math.random()*span;
       ents.push(makeEnt("mine", {n:"Sea mine"}, md, 0.10 + Math.random()*0.80, 0));
@@ -202,7 +202,7 @@ function catchEnt(e){
       return false;
     }
     /* reel - a big fish runs and empties the spool */
-    if(Math.random() < riskFor(e.kg / (reel().drag * SPOOL_FACTOR))){
+    if(Math.random() < riskFor(e.kg / spoolCapacity())){
       endRun("spool", e.def.n + " at " + fmtKg(e.kg) + " ran " + reel().n + " dry.");
       return false;
     }
@@ -291,6 +291,31 @@ function equipGear(kind, id){
   if(mode !== "idle" || owned[kind].indexOf(id) < 0) return;
   equip[kind] = id;
   sEquip(); save(); spawnColumn(); renderAll();
+}
+function buySkin(kind, id){
+  if(mode !== "idle") return;
+  var list = kind === "char" ? CHAR_SKINS : BOAT_SKINS;
+  var have = kind === "char" ? ownedChar : ownedBoat;
+  var item = null;
+  for(var i=0;i<list.length;i++) if(list[i].id === id) item = list[i];
+  if(!item) return;
+  if(have.indexOf(id) >= 0){ equipSkin(kind, id); return; }
+  if(plevel < item.lvl || cash < item.cost) return;
+  cash -= item.cost; cashShown = cash;
+  have.push(id);
+  if(kind === "char") charSkin = id; else boatSkin = id;
+  sBuy(); save(); renderAll();
+}
+function equipSkin(kind, id){
+  var have = kind === "char" ? ownedChar : ownedBoat;
+  if(have.indexOf(id) < 0) return;
+  if(kind === "char") charSkin = id; else boatSkin = id;
+  sEquip(); save(); renderAll();
+}
+function setDial(k, v){
+  if(lvl[k] < MAXLVL) return;
+  dial[k] = Math.min(100, Math.max(0, Math.round(v/10)*10));
+  save(); spawnColumn(); syncGauges();
 }
 function selectArea(id){
   if(mode !== "idle") return;

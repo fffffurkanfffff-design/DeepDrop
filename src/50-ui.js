@@ -28,8 +28,13 @@ var elKindTabs = document.getElementById("kindtabs"), elKindBlurb = document.get
     elGearGrid = document.getElementById("gearGrid");
 var elSkillGrid = document.getElementById("skillGrid");
 var elMapGrid = document.getElementById("mapGrid"), elSpecBody = document.getElementById("specBody");
+var elCash4 = document.getElementById("cash4");
+var elSkinTabs = document.getElementById("skinTabs"), elSkinGrid = document.getElementById("skinGrid");
+var elCrewCv = document.getElementById("crewCv"), elCrewCaption = document.getElementById("crewCaption");
+var skinKind = "char";
 var VIEWS = {fish:document.getElementById("viewFish"), shop:document.getElementById("viewShop"),
-             skills:document.getElementById("viewSkills"), map:document.getElementById("viewMap")};
+             skills:document.getElementById("viewSkills"), map:document.getElementById("viewMap"),
+             crew:document.getElementById("viewCrew")};
 
 /* ---- helpers ------------------------------------------------------------ */
 function rand(n){ return "R " + Math.round(n).toLocaleString("en-ZA"); }
@@ -106,6 +111,7 @@ function setView(v){
   if(v === "shop") renderShopTab();
   if(v === "skills") renderSkillsTab();
   if(v === "map") renderMapTab();
+  if(v === "crew") renderCrewTab();
   if(v === "fish") resize();
 }
 elNav.addEventListener("click", function(ev){
@@ -130,6 +136,7 @@ function renderHeader(){
   }
   var c = Math.round(cashShown).toLocaleString("en-ZA");
   elCash.textContent = c; elCash2.textContent = c; elCash3.textContent = c;
+  if(elCash4) elCash4.textContent = c;
   elRigTag.textContent = rod().n.split(" ")[0] + " · " + line().n;
 }
 
@@ -207,7 +214,7 @@ function renderShopTab(){
     if(shopKind === "rod")  stats = statChip("Handles", g.maxKg + " kg", cur.maxKg, g.maxKg);
     if(shopKind === "reel") stats = statChip("Depth", g.depth + " m", cur.depth, g.depth) +
                                     statChip("Drag", g.drag + " kg", cur.drag, g.drag) +
-                                    statChip("Before spooling", (g.drag*SPOOL_FACTOR) + " kg", cur.drag, g.drag) +
+                                    statChip("Before spooling", (g.holds || g.drag*SPOOL_FACTOR) + " kg", cur.holds || cur.drag*SPOOL_FACTOR, g.holds || g.drag*SPOOL_FACTOR) +
                                     statChip("Retrieve", g.spd.toFixed(1) + " kn", cur.spd, g.spd);
     if(shopKind === "line") stats = statChip("Class", g.kg + " kg", cur.kg, g.kg) +
                                     statChip("Lands about", (g.kg*LINE_FACTOR) + " kg", cur.kg, g.kg);
@@ -267,18 +274,25 @@ function renderSkillsTab(){
     var next = (sk(k) + s.step).toFixed(s.dec) + " " + s.unit;
 
     var btn;
-    if(locked) btn = '<span class="lock">Level ' + s.lvl + '</span>' +
-                     '<button class="buy" type="button" disabled>Locked</button>';
-    else if(maxed) btn = '<button class="buy owned" type="button" disabled>Maxed</button>';
+    if(locked) btn = '<span class="lock">Unlocks at level ' + s.lvl + '</span>' +
+                     '<button class="buy" type="button" disabled>' + rand(c) + '</button>';
+    else if(maxed) btn = '<span class="lock" style="color:var(--sodium)">Maxed &middot; adjustable</span>';
     else btn = '<button class="buy" type="button" data-skill="' + k + '"' +
                (cash >= c && mode === "idle" ? '' : ' disabled') + '>' +
                next + ' &middot; ' + rand(c) + '</button>';
 
-    h += '<div class="card' + (locked ? ' locked' : '') + '">' +
+    var dialRow = maxed
+      ? '<div class="dial"><span class="lbl">Intensity</span>' +
+          '<input type="range" min="0" max="100" step="10" value="' + dial[k] + '" ' +
+            'data-dialskill="' + k + '" aria-label="' + s.n + ' intensity">' +
+          '<span class="pct">' + dial[k] + '%</span></div>'
+      : '';
+
+    h += '<div class="card' + (locked ? ' locked' : '') + (maxed ? ' maxed' : '') + '">' +
            '<div class="card-top"><span class="card-name">' + s.n +
              '<em>' + s.blurb + '</em></span>' +
              '<span class="stat">now <b>' + now + '</b></span></div>' +
-           '<div class="pips">' + pips + '</div>' +
+           '<div class="pips">' + pips + '</div>' + dialRow +
            '<div class="card-foot">' + btn + '</div>' +
          '</div>';
   }
@@ -291,6 +305,17 @@ elSkillGrid.addEventListener("click", function(ev){
   buySkill(b.getAttribute("data-skill"));
   b.blur();
 });
+elSkillGrid.addEventListener("input", function(ev){
+  var r = ev.target.closest("input[data-dialskill]");
+  if(!r) return;
+  var k = r.getAttribute("data-dialskill");
+  setDial(k, +r.value);
+  var pct = r.parentNode.querySelector(".pct");
+  if(pct) pct.textContent = dial[k] + "%";
+  var card = r.closest(".card");
+  var now = card && card.querySelector(".stat b");
+  if(now) now.textContent = sk(k).toFixed(SKILLS[k].dec) + " " + SKILLS[k].unit;
+});
 
 /* ---- fisheries ---------------------------------------------------------- */
 function renderMapTab(){
@@ -299,7 +324,8 @@ function renderMapTab(){
     var a = AREAS[i];
     var locked = plevel < a.lvl;
     var on = area === a.id;
-    var tierCls = a.tier === "Beginner" ? "b" : a.tier === "Intermediate" ? "i" : "e";
+    var tierCls = a.tier === "Beginner" ? "b" : a.tier === "Intermediate" ? "i"
+                : a.tier === "Expert" ? "e" : "l";
     var n = 0;
     for(var j=0;j<FISH.length;j++) if(FISH[j].areas.indexOf(a.id) >= 0) n++;
 
@@ -510,22 +536,6 @@ function renderSkipper(){
           '<button class="mini" type="button" data-act="new">New skipper</button>' +
           '<button class="mini" type="button" data-act="cancel">Back</button>' +
         '</div>' + msg + '<div class="who">' + w + '</div></div>';
-  } else if(skipperView === "code"){
-    elSkipBody.innerHTML =
-      '<div class="skip">' +
-        '<p class="hint">Your progress as a code. Copy it, then paste it into the game on another ' +
-        'computer to carry everything across.</p>' +
-        '<div class="code-box">' +
-          '<input type="text" id="codeOut" readonly value="' + esc(encodeSave()) + '">' +
-          '<button class="mini go" type="button" data-act="copy">Copy</button>' +
-        '</div>' +
-        '<p class="hint">Paste a code here to load it:</p>' +
-        '<div class="code-box">' +
-          '<input type="text" id="codeIn" placeholder="DD2-..." autocomplete="off">' +
-          '<button class="mini go" type="button" data-act="restore">Load</button>' +
-        '</div>' + msg +
-        '<div class="skip-actions"><button class="mini" type="button" data-act="cancel">Back</button></div>' +
-      '</div>';
   } else {
     elSkipBody.innerHTML =
       '<div class="skip">' +
@@ -538,7 +548,6 @@ function renderSkipper(){
         '<div class="skip-actions">' +
           '<button class="mini" type="button" data-act="switch">Switch</button>' +
           '<button class="mini" type="button" data-act="new">New</button>' +
-          '<button class="mini" type="button" data-act="code">Save code</button>' +
         '</div>' + msg +
       '</div>';
   }
@@ -594,42 +603,54 @@ function claimName(){
   }
   switchTo(name, {});
 }
+function codeSay(kind, text){
+  var el = document.getElementById("codeMsg");
+  if(!el) return;
+  el.className = "hint " + kind;
+  el.textContent = text;
+}
+function refreshCode(){
+  var el = document.getElementById("codeOut");
+  if(el && document.activeElement !== el) el.value = encodeSave();
+}
 function copyCode(){
   var el = document.getElementById("codeOut");
   if(!el) return;
-  var done = function(){ skipperMsg = {k:"ok", t:"Code copied."}; renderSkipper(); };
+  var done = function(){ codeSay("ok", "Code copied."); };
   try{
     el.select(); el.setSelectionRange(0, 99999);
     if(navigator.clipboard && navigator.clipboard.writeText){
       navigator.clipboard.writeText(el.value).then(done, function(){
         try{ document.execCommand("copy"); done(); }
-        catch(e){ skipperMsg = {k:"warn", t:"Copy it by hand: select the code and press Ctrl+C."}; renderSkipper(); }
+        catch(e){ codeSay("warn", "Copy it by hand: select the code and press Ctrl+C."); }
       });
       return;
     }
     document.execCommand("copy"); done();
   }catch(e){
-    skipperMsg = {k:"warn", t:"Copy it by hand: select the code and press Ctrl+C."};
-    renderSkipper();
+    codeSay("warn", "Copy it by hand: select the code and press Ctrl+C.");
   }
 }
 function restoreCode(){
-  if(mode !== "idle"){ skipperMsg = {k:"warn", t:"Finish the cast first."}; renderSkipper(); return; }
+  if(mode !== "idle"){ codeSay("warn", "Finish the cast first."); return; }
   var el = document.getElementById("codeIn");
   if(!el) return;
-  var s = decodeSave(el.value);
-  if(!s){ skipperMsg = {k:"warn", t:"That code did not read right. Check it and try again."}; renderSkipper(); return; }
+  var raw = el.value.trim();
+  if(!raw){ codeSay("warn", "Paste a code into the box first."); return; }
+  var s = decodeSave(raw);
+  if(!s){ codeSay("warn", "That code did not read right. Check it and try again."); return; }
   applyState(s);
   if(!profile) profile = "Skipper";
   save(); spawnColumn(); renderAll(); pushScore();
-  skipperView = "main";
-  skipperMsg = {k:"ok", t:"Progress loaded."};
-  renderSkipper();
+  el.value = "";
+  codeSay("ok", "Progress loaded — level " + plevel + ", " + rand(cash) + ".");
 }
 
 /* ---- render everything -------------------------------------------------- */
 function renderAll(){
   renderHeader();
+  refreshCode();
+  renderCrewTab();
   renderHaul();
   renderSkipper();
   renderLeaderboard();
@@ -638,3 +659,114 @@ function renderAll(){
   renderMapTab();
   syncGauges();
 }
+
+/* ---- crew and boat ------------------------------------------------------ */
+function renderCrewPreview(){
+  if(!elCrewCv) return;
+  var c = elCrewCv, pctx = c.getContext("2d");
+  /* drawBoat paints through the shared ctx, so lend it this canvas briefly */
+  var keepCtx = ctx, keepDpr = dpr;
+  ctx = pctx; dpr = 1;
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,c.width,c.height);
+
+  var waterY = c.height*0.66;
+  var g = ctx.createLinearGradient(0, waterY, 0, c.height);
+  g.addColorStop(0, "#0E4152"); g.addColorStop(1, "#062430");
+  ctx.fillStyle = g; ctx.fillRect(0, waterY, c.width, c.height-waterY);
+
+  ctx.strokeStyle = "rgba(150,214,214,.42)"; ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  for(var wx=0; wx<=c.width; wx+=6){
+    var wy = waterY + Math.sin(wx*0.045 + t*1.7)*2.2;
+    if(wx === 0) ctx.moveTo(wx,wy); else ctx.lineTo(wx,wy);
+  }
+  ctx.stroke();
+
+  /* the whole point of this screen is seeing the detail, so draw it large */
+  var s = 2.1;
+  ctx.save();
+  ctx.translate(c.width/2, waterY);
+  ctx.scale(s, s);
+  ctx.translate(-c.width/2, -waterY);
+  drawBoat(c.width/2, waterY);
+  ctx.restore();
+
+  ctx = keepCtx; dpr = keepDpr;
+}
+
+function renderCrewTab(){
+  if(!elSkinGrid) return;
+  var list = skinKind === "char" ? CHAR_SKINS : BOAT_SKINS;
+  var have = skinKind === "char" ? ownedChar : ownedBoat;
+  var wearing = skinKind === "char" ? charSkin : boatSkin;
+
+  var tabs = elSkinTabs.querySelectorAll("button[data-skin]");
+  for(var ti=0; ti<tabs.length; ti++){
+    tabs[ti].classList.toggle("on", tabs[ti].getAttribute("data-skin") === skinKind);
+  }
+
+  var h = "";
+  for(var i=0;i<list.length;i++){
+    var it = list[i];
+    var owned2 = have.indexOf(it.id) >= 0;
+    var on = wearing === it.id;
+    var locked = plevel < it.lvl;
+
+    var sw = skinKind === "char"
+      ? [it.shirt, it.trouser, it.hatCol || it.skin]
+      : [it.hull, it.cabin, it.trim];
+    var swatch = '<span class="skincard-sw">';
+    for(var q=0;q<sw.length;q++) swatch += '<span class="sw" style="background:' + sw[q] + '"></span>';
+    swatch += '</span>';
+
+    var btn;
+    if(locked) btn = '<span class="lock">Unlocks at level ' + it.lvl + '</span>' +
+                     '<button class="buy" type="button" disabled>' + rand(it.cost) + '</button>';
+    else if(on) btn = '<button class="buy on" type="button" disabled>Wearing</button>';
+    else if(owned2) btn = '<button class="buy owned" type="button" data-skinkind="' + skinKind +
+                          '" data-skinid="' + it.id + '">Wear</button>';
+    else btn = '<button class="buy" type="button" data-skinkind="' + skinKind + '" data-skinid="' + it.id + '"' +
+               (cash >= it.cost && mode === "idle" ? '' : ' disabled') + '>' + rand(it.cost) + '</button>';
+
+    h += '<div class="card' + (on ? ' equipped' : '') + (locked ? ' locked' : '') + '">' +
+           '<div class="card-top"><span class="card-name">' + esc(it.n) +
+             '<em>' + esc(it.sub) + '</em></span>' + swatch + '</div>' +
+           '<div class="card-foot">' + btn + '</div>' +
+         '</div>';
+  }
+  elSkinGrid.innerHTML = h;
+  if(elCrewCaption){
+    elCrewCaption.textContent = charById(charSkin).n + " aboard the " + boatById(boatSkin).n + ".";
+  }
+  renderCrewPreview();
+}
+if(elSkinTabs){
+  elSkinTabs.addEventListener("click", function(ev){
+    var b = ev.target.closest("button[data-skin]");
+    if(!b) return;
+    skinKind = b.getAttribute("data-skin");
+    renderCrewTab(); b.blur();
+  });
+}
+if(elSkinGrid){
+  elSkinGrid.addEventListener("click", function(ev){
+    var b = ev.target.closest("button[data-skinid]");
+    if(!b) return;
+    buySkin(b.getAttribute("data-skinkind"), b.getAttribute("data-skinid"));
+    b.blur();
+  });
+}
+
+/* The save-code panel is static markup, so its buttons wire up once and the
+   readonly field is refreshed by renderAll rather than re-rendered. */
+(function(){
+  var copyBtn = document.getElementById("codeCopy");
+  var loadBtn = document.getElementById("codeLoad");
+  var inp = document.getElementById("codeIn");
+  if(copyBtn) copyBtn.addEventListener("click", function(){ copyCode(); this.blur(); });
+  if(loadBtn) loadBtn.addEventListener("click", function(){ restoreCode(); this.blur(); });
+  if(inp) inp.addEventListener("keydown", function(ev){
+    if(ev.key === "Enter"){ ev.preventDefault(); restoreCode(); }
+  });
+})();
